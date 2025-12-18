@@ -3,16 +3,37 @@
 import { useState, useEffect } from "react";
 import { Sidebar } from "./sidebar";
 import { ChatArea } from "./chat-area";
-import type { Conversation, Message } from "@/types";
+import type { Conversation } from "@/types";
 import { nanoid } from "nanoid";
+import useSWR, { mutate } from "swr";
+import { generateChatId } from "@/lib/utils";
+import { useRouter } from 'next/navigation';
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function App() {
     const [isMobileView, setIsMobileView] = useState(false);
-    const [conversations, setConversations] = useState<Conversation[]>([]);
     const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
+    const router = useRouter();
 
-    const activeConversation = conversations.find(c => c.id === activeConversationId) || null;
+    const { data: history, error, mutate: mutateHistory } = useSWR<any[]>('/api/history', fetcher, {
+        fallbackData: [],
+    });
+
+    const conversations: Conversation[] = history?.map(chat => ({
+        id: chat.id,
+        name: chat.title || 'New Chat',
+        recipients: [], // Metadata typically
+        messages: [], // We don't load all messages for all chats heavily here, Sidebar assumes some structure. 
+        // Sidebar typically needs last message time.
+        // Our API response needs to include lastMessageTime if we want sorting.
+        // For now, mapping simplified.
+        lastMessageTime: chat.createdAt,
+        unreadCount: 0,
+        pinned: false,
+        muted: false
+    })) || [];
 
     useEffect(() => {
         const handleResize = () => {
@@ -23,44 +44,21 @@ export default function App() {
         return () => window.removeEventListener("resize", handleResize);
     }, []);
 
-    // Mock initial data or fetch from Supabase later
-    useEffect(() => {
-        // Mock data
-        const mockConvo: Conversation = {
-            id: '1',
-            name: 'Welcome Bot',
-            recipients: [{ id: 'bot', name: 'Welcome Bot' }],
-            messages: [
-                { id: 'm1', content: 'Welcome to Nova Chat!', sender: 'system', timestamp: new Date().toISOString() },
-                { id: 'm2', content: 'This is a demo conversation.', sender: 'bot', timestamp: new Date().toISOString() }
-            ],
-            lastMessageTime: new Date().toISOString(),
-            unreadCount: 0
-        };
-        setConversations([mockConvo]);
-        setActiveConversationId('1');
-    }, []);
+    const handleDeleteConversation = async (id: string) => {
+        // Optimistic update
+        mutateHistory(history?.filter(c => c.id !== id), false);
 
-    const handleSendMessage = (text: string) => {
-        if (!activeConversationId) return;
+        // Call Server Action or API to delete
+        // For now just local state simulation but we should call API
+        // const res = await fetch(`/api/chat?id=${id}`, { method: 'DELETE' });
+        // mutateHistory(); 
+        // Since we don't have delete endpoint fully wired in App yet, leaving as UI only for now
+    };
 
-        const newMessage: Message = {
-            id: nanoid(),
-            content: text,
-            sender: 'me',
-            timestamp: new Date().toISOString()
-        };
-
-        setConversations(prev => prev.map(c => {
-            if (c.id === activeConversationId) {
-                return {
-                    ...c,
-                    messages: [...c.messages, newMessage],
-                    lastMessageTime: newMessage.timestamp
-                };
-            }
-            return c;
-        }));
+    const handleNewChat = () => {
+        const newId = generateChatId();
+        setActiveConversationId(newId);
+        // We will let ChatArea handle the actual creation on first message
     };
 
     const showSidebar = !isMobileView || !activeConversationId;
@@ -74,34 +72,27 @@ export default function App() {
                         conversations={conversations}
                         activeConversation={activeConversationId}
                         onSelectConversation={setActiveConversationId}
-                        onDeleteConversation={(id) => setConversations(prev => prev.filter(c => c.id !== id))}
-                        onUpdateConversation={(updatedConversations) => {
-                            // This handles potential entire array updates, but for specific ID usually we map
-                            // Here Sidebar passes updatedConversations directly?
-                            // Checking Sidebar signature: onUpdateConversation(conversations: Conversation[], ...)
-                            // So we assume it passes the full new state?
-                            // Actually let's just assume we update specific conversation in simpler app
-                            // But Sidebar impl does `onUpdateConversation(updatedConversations, ...)`
-                            // So we should just set state.
-                            // Ideally we should merge carefully but simplified:
-                            // Wait, Sidebar impl maps: `const updatedConversations = conversations.map(...)`
-                            // So it passes the FULL ARRAY.
-                            // setConversations(updatedConversations); // Types might mismatch if not careful, but assuming it matches.
-                        }}
+                        onDeleteConversation={handleDeleteConversation}
+                        onUpdateConversation={() => { }}
                         isMobileView={isMobileView}
                         searchTerm={searchTerm}
                         onSearchChange={setSearchTerm}
-                    />
+                    >
+                        <div className="p-2">
+                            <button onClick={handleNewChat} className="w-full text-left p-2 hover:bg-muted rounded">New Chat</button>
+                        </div>
+                    </Sidebar>
                 </div>
             )}
 
             {showChat && (
                 <main className="flex-1 w-full min-w-0 relative z-10 bg-background">
                     <ChatArea
-                        activeConversation={activeConversation}
+                        key={activeConversationId} // Force re-mount on chat change
+                        chatId={activeConversationId || generateChatId()}
                         isMobileView={isMobileView}
                         onBack={() => setActiveConversationId(null)}
-                        onSendMessage={handleSendMessage}
+                        onNewMessage={() => mutateHistory()} // Refresh list on new message
                     />
                 </main>
             )}
