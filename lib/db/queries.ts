@@ -16,6 +16,7 @@ export interface DBMessage {
     id: string;
     chatId: string;
     role: string;
+    content?: string; // Extracted from parts for convenience
     parts: any[];
     attachments: any[];
     createdAt: Date;
@@ -81,14 +82,24 @@ export async function getMessagesByChatId({ id }: { id: string }): Promise<DBMes
         return [];
     }
 
-    return data.map((msg: any) => ({
-        id: msg.id,
-        chatId: msg.chat_id,
-        role: msg.role,
-        parts: msg.parts,
-        attachments: msg.attachments || [],
-        createdAt: new Date(msg.created_at),
-    }));
+    return data.map((msg: any) => {
+        const parts = msg.parts || [];
+        // Extract text content from parts for convenience
+        const content = parts
+            .filter((p: any) => p.type === 'text')
+            .map((p: any) => p.text)
+            .join('');
+
+        return {
+            id: msg.id,
+            chatId: msg.chat_id,
+            role: msg.role,
+            content,
+            parts,
+            attachments: msg.attachments || [],
+            createdAt: new Date(msg.created_at),
+        };
+    });
 }
 
 export async function saveMessages({ messages }: { messages: DBMessage[] }) {
@@ -177,14 +188,23 @@ export async function getMessageById({ id }: { id: string }): Promise<DBMessage[
         return [];
     }
 
-    return data.map((msg: any) => ({
-        id: msg.id,
-        chatId: msg.chat_id,
-        role: msg.role,
-        parts: msg.parts,
-        attachments: msg.attachments || [],
-        createdAt: new Date(msg.created_at),
-    }));
+    return data.map((msg: any) => {
+        const parts = msg.parts || [];
+        const content = parts
+            .filter((p: any) => p.type === 'text')
+            .map((p: any) => p.text)
+            .join('');
+
+        return {
+            id: msg.id,
+            chatId: msg.chat_id,
+            role: msg.role,
+            content,
+            parts,
+            attachments: msg.attachments || [],
+            createdAt: new Date(msg.created_at),
+        };
+    });
 }
 
 export async function deleteMessagesByChatIdAfterTimestamp({

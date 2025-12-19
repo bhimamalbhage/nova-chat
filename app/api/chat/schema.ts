@@ -20,9 +20,10 @@ export const postRequestBodySchema = z.object({
         role: z.enum(['user']),
         content: z.string().min(1).max(10000),
         parts: z.array(z.union([textPartSchema, filePartSchema])),
-    }),
-    selectedChatModel: z.enum(['chat-model', 'chat-model-reasoning']).optional().default('chat-model'),
-    selectedVisibilityType: z.enum(['public', 'private']),
+    }).optional(),
+    messages: z.array(z.any()).optional(),
+    selectedChatModel: z.string().optional().default('chat-model'),
+    selectedVisibilityType: z.enum(['public', 'private']).optional().default('private'),
 });
 
 export type PostRequestBody = z.infer<typeof postRequestBodySchema>;

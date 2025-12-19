@@ -3,33 +3,16 @@ import { Icons } from "./icons";
 
 interface MessageInputProps {
     onSendMessage: (text: string) => void;
-    value?: string;
-    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
     disabled?: boolean;
 }
 
-export function MessageInput({ onSendMessage, value: propValue, onChange, disabled }: MessageInputProps) {
-    const [localValue, setLocalValue] = useState("");
-
-    // Use prop value if controlled, otherwise local state
-    const isControlled = propValue !== undefined;
-    const value = isControlled ? propValue : localValue;
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (onChange) {
-            onChange(e);
-        }
-        if (!isControlled) {
-            setLocalValue(e.target.value);
-        }
-    };
+export function MessageInput({ onSendMessage, disabled }: MessageInputProps) {
+    const [value, setValue] = useState("");
 
     const handleSend = () => {
         if (!value.trim()) return;
         onSendMessage(value);
-        if (!isControlled) {
-            setLocalValue("");
-        }
+        setValue("");
     }
 
     return (
@@ -38,7 +21,7 @@ export function MessageInput({ onSendMessage, value: propValue, onChange, disabl
                 <input
                     className="flex-1 bg-muted/50 border-0 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     value={value}
-                    onChange={handleChange}
+                    onChange={e => setValue(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && !disabled && handleSend()}
                     placeholder="Type a message..."
                     disabled={disabled}

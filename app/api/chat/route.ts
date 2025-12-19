@@ -2,7 +2,7 @@
 
 import {
     streamText,
-    convertToModelMessages,
+    stepCountIs,
     type UIMessage,
 } from 'ai';
 
@@ -27,7 +27,38 @@ export async function POST(request: Request) {
         const json = await request.json();
         const requestBody = postRequestBodySchema.parse(json);
 
-        const { id, message, selectedChatModel, selectedVisibilityType } = requestBody;
+        const { id, message: legacyMessage, messages, selectedChatModel, selectedVisibilityType } = requestBody;
+
+        let message = legacyMessage;
+        if (!message && messages && messages.length > 0) {
+            const lastMessage = messages[messages.length - 1];
+
+            const parts =
+                Array.isArray(lastMessage.parts) && lastMessage.parts.length > 0
+                    ? lastMessage.parts
+                    : [{ type: 'text', text: '' }];
+
+            const contentString = parts
+                .filter((p: any) => p.type === 'text')
+                .map((p: any) => p.text)
+                .join('');
+
+
+            message = {
+                id: lastMessage.id || generateUUID(),
+                createdAt: lastMessage.createdAt
+                    ? new Date(lastMessage.createdAt)
+                    : new Date(),
+                role: 'user',
+                content: contentString,
+                parts,
+            };
+
+        }
+
+        if (!message) {
+            return new Response('Missing message', { status: 400 });
+        }
 
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
@@ -64,20 +95,33 @@ export async function POST(request: Request) {
         const formattedPreviousMessages = previousMessages.map((dbMsg) => ({
             id: dbMsg.id,
             role: dbMsg.role as UIMessage['role'],
-            parts: dbMsg.parts as any, // Cast parts to any or specific type if needed
+            content: '',
+            parts: (dbMsg.parts && dbMsg.parts.length > 0) ? dbMsg.parts : [{ type: 'text', text: dbMsg.content || '' }],
             createdAt: dbMsg.createdAt,
         })) as UIMessage[];
 
-        const currentMessageContent = String(message.content); // Ensure content is string
+        const currentMessageContent = message.content ? String(message.content) : "";
 
-        // Save user message
+        // Ensure parts are populated if validation failed on client or transport
+        // This MUST happen before saving to ensure parts is never empty in DB
+        let userMessageParts = message.parts;
+        if (!userMessageParts || userMessageParts.length === 0) {
+            if (currentMessageContent) {
+                userMessageParts = [{ type: 'text', text: currentMessageContent }];
+            } else {
+                // Fallback: if no content at all, create empty text part
+                userMessageParts = [{ type: 'text', text: '' }];
+            }
+        }
+
+        // Save user message with guaranteed non-empty parts
         await saveMessages({
             messages: [
                 {
                     id: message.id,
                     chatId: id,
                     role: 'user',
-                    parts: message.parts,
+                    parts: userMessageParts,
                     attachments: [],
                     createdAt: new Date(),
                 },
@@ -93,22 +137,35 @@ export async function POST(request: Request) {
         };
 
         // Prepare messages for the AI model
-        const startMessages = [...formattedPreviousMessages, {
-            id: message.id,
-            role: 'user' as const,
-            parts: message.parts, // Use parts directly
-            createdAt: new Date()
-        }] as UIMessage[];
+        const startMessages = [
+            ...formattedPreviousMessages.map(m => ({
+                role: m.role,
+                content: m.parts
+                    ?.filter(p => p.type === 'text')
+                    .map(p => p.text)
+                    .join('') || ''
+            })),
+            {
+                role: 'user' as const,
+                content: currentMessageContent
+            }
+        ]
 
-        // We are skipping the internal supermemory tools for now as they require a backend service.
-        // If needed, we can add standard tools (like web search) here later.
-
-
+        // Initialize tools
+        let tools: any = {};
+        if (process.env.SUPERMEMORY_API_KEY) {
+            const { createMemoryTools } = await import('@/lib/ai/tools/memory-tools');
+            tools = {
+                ...createMemoryTools(process.env.SUPERMEMORY_API_KEY, user.id),
+            };
+        }
 
         const result = streamText({
             model: myProvider,
             system: systemPrompt({ selectedChatModel: getModelName(), requestHints, isNewUser: previousMessages.length === 0 }),
-            messages: convertToModelMessages(startMessages),
+            messages: startMessages as any,
+            tools,
+            stopWhen: stepCountIs(5), // Allow multi-step tool calls
             onFinish: async ({ text }) => {
                 if (!text) return;
 
@@ -128,7 +185,7 @@ export async function POST(request: Request) {
             },
         });
 
-        return result.toTextStreamResponse();
+        return result.toUIMessageStreamResponse();
 
     } catch (error) {
         console.error('Chat API Error:', error);
