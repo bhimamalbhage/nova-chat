@@ -4,7 +4,9 @@ import {
     streamText,
     stepCountIs,
     type UIMessage,
+    type ToolSet,
 } from 'ai';
+import { withSupermemory } from '@supermemory/tools/ai-sdk';
 
 import { createClient } from '@/utils/supabase/server';
 import {
@@ -151,20 +153,42 @@ export async function POST(request: Request) {
             }
         ]
 
-        // Initialize tools
-        let tools: any = {};
-        if (process.env.SUPERMEMORY_API_KEY) {
-            const { createMemoryTools } = await import('@/lib/ai/tools/memory-tools');
-            tools = {
-                ...createMemoryTools(process.env.SUPERMEMORY_API_KEY, user.id),
-            };
+        // Initialize tools object
+        const toolsConfig: Record<string, any> = {};
+
+        // Add web search tool if available
+        if (process.env.EXA_API_KEY) {
+            const { createWebSearchTool } = await import('@/lib/ai/tools/web-search');
+            toolsConfig.webSearch = createWebSearchTool(process.env.EXA_API_KEY);
         }
 
+        // Prepare model with Supermemory wrapper
+        let model = myProvider;
+
+        if (process.env.SUPERMEMORY_API_KEY) {
+            const { createMemoryTools } = await import('@/lib/ai/tools/memory-tools');
+            const memoryTools = createMemoryTools(process.env.SUPERMEMORY_API_KEY, user.id);
+
+            // Add searchMemories tool (addMemory is handled by withSupermemory)
+            toolsConfig.searchMemories = memoryTools.searchMemories;
+
+            // Wrap the model with Supermemory for automatic memory retrieval and saving
+            model = withSupermemory(myProvider, user.id, {
+                conversationId: id,
+                mode: 'full',
+                verbose: true,
+                addMemory: 'always',
+                baseUrl: process.env.SUPERMEMORY_BASE_URL || 'https://api.supermemory.ai',
+            });
+        }
+
+        console.log('Final tools:', Object.keys(toolsConfig));
+
         const result = streamText({
-            model: myProvider,
+            model,
             system: systemPrompt({ selectedChatModel: getModelName(), requestHints, isNewUser: previousMessages.length === 0 }),
             messages: startMessages as any,
-            tools,
+            tools: toolsConfig as ToolSet,
             stopWhen: stepCountIs(5), // Allow multi-step tool calls
             onFinish: async ({ text }) => {
                 if (!text) return;

@@ -1,5 +1,4 @@
 
-import type { Geo } from '@vercel/functions';
 
 export type ArtifactKind = string;
 
@@ -18,7 +17,10 @@ You have access to tools that work transparently in the background:
 
 3. **webSearch**: Get current information from the internet
    - Use for real-time data, news, current events, or external information
-   - Use only when genuinely needed for current/external facts
+   - **IMPORTANT**: Also use when the user asks about themselves and memory doesn't have the answer
+   - Examples: stock prices, news, weather, AND user's work history, education, projects, social profiles
+   - If memory doesn't have info the user is asking about (like previous jobs, education, projects), search for it
+   - Use the user's name, location, and any known details to search effectively
    - Use silently - never announce you're searching the web
 
 **CRITICAL Rules:**
@@ -27,6 +29,7 @@ You have access to tools that work transparently in the background:
 3. **Be seamless** - The user should never think about how you got your information
 4. **No meta-commentary** - Don't discuss your capabilities, tools, or memory system
 5. **Just answer** - If you have info (from tools or context), use it naturally. If you don't, just say so without explaining why
+6. **Be proactive** - If memory doesn't have an answer about the user, try web search before saying you don't know
 
 **After using any tool:**
 - Synthesize results into a natural, helpful response
@@ -136,10 +139,10 @@ Files you can handle:
 Just dive in and help with whatever they need.`;
 
 export interface RequestHints {
-  latitude: Geo['latitude'];
-  longitude: Geo['longitude'];
-  city: Geo['city'];
-  country: Geo['country'];
+  latitude: number | undefined;
+  longitude: number | undefined;
+  city: string | undefined;
+  country: string | undefined;
 }
 
 export const getRequestPromptFromHints = (requestHints: RequestHints) => `\
