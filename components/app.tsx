@@ -97,7 +97,7 @@ export default function App() {
                             <Button variant="ghost" size="sm" onClick={() => setCurrentView("chat")}>Back</Button>
                         </div>
                     )}
-                    <MemoryGraphView isActive={true} />
+                    <MemoryGraphView isActive={true} isMobileView={isMobileView} />
                 </div>
             );
         }
