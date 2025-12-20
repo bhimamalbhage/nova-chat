@@ -182,6 +182,16 @@ export async function POST(request: Request) {
             });
         }
 
+        // Add Composio tools if available
+        if (process.env.COMPOSIO_API_KEY) {
+            const { createComposioTools } = await import('@/lib/ai/tools/composio');
+            // Use user.id as the external user identifier for Composio
+            const composioTools = await createComposioTools(process.env.COMPOSIO_API_KEY, user.id);
+
+            // composioTools is already in the format expected by Vercel AI SDK
+            Object.assign(toolsConfig, composioTools);
+        }
+
         console.log('Final tools:', Object.keys(toolsConfig));
 
         const result = streamText({
@@ -190,6 +200,15 @@ export async function POST(request: Request) {
             messages: startMessages as any,
             tools: toolsConfig as ToolSet,
             stopWhen: stepCountIs(5), // Allow multi-step tool calls
+            onStepFinish: async ({ toolCalls, toolResults }) => {
+                if (toolCalls && toolCalls.length > 0) {
+                    console.log(`[AI Step] Executed ${toolCalls.length} tools`);
+                    toolCalls.forEach(tc => {
+                        console.log(`[AI Step] Tool Call: ${tc.toolName}`);
+                        console.log(`[AI Step] Params:`, JSON.stringify(tc.args, null, 2));
+                    });
+                }
+            },
             onFinish: async ({ text }) => {
                 if (!text) return;
 

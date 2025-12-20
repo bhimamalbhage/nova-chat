@@ -18,9 +18,16 @@ export async function GET(request: Request) {
         console.log('[Profile API] Using container tag:', containerTag);
 
         if (!process.env.SUPERMEMORY_API_KEY) {
+            console.log('[Profile API] Supermemory API key not configured, returning empty profile');
             return NextResponse.json(
-                { error: 'Supermemory API key not configured' },
-                { status: 500 },
+                {
+                    profile: {
+                        userId: user.id,
+                        static: [],
+                        dynamic: [],
+                    },
+                },
+                { status: 200 },
             );
         }
 

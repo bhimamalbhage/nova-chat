@@ -14,9 +14,18 @@ export async function POST(request: Request) {
         }
 
         if (!process.env.SUPERMEMORY_API_KEY) {
+            console.log('[Documents API] Supermemory API key not configured, returning empty documents');
             return NextResponse.json(
-                { error: 'Supermemory API key not configured' },
-                { status: 500 },
+                {
+                    documents: [],
+                    pagination: {
+                        currentPage: 1,
+                        totalPages: 0,
+                        totalItems: 0,
+                        limit: 500,
+                    },
+                },
+                { status: 200 },
             );
         }
 
