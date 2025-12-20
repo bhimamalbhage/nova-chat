@@ -243,6 +243,22 @@ export async function updateChatVisiblityById({
     }
 }
 
+export async function updateChatTitle({
+    id,
+    title,
+}: {
+    id: string;
+    title: string;
+}) {
+    const supabase = await createClient();
+    const { error } = await supabase.from('chats').update({ title }).eq('id', id);
+
+    if (error) {
+        console.error('Error updating chat title:', error);
+        throw new Error('Failed to update chat title');
+    }
+}
+
 export async function deleteMessages({
     messageIds,
     chatId,

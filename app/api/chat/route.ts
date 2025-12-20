@@ -5,6 +5,7 @@ import {
     stepCountIs,
     type UIMessage,
     type ToolSet,
+    generateText,
 } from 'ai';
 import { withSupermemory } from '@supermemory/tools/ai-sdk';
 
@@ -16,6 +17,7 @@ import {
     saveChat,
     saveMessages,
     createStreamId,
+    updateChatTitle,
 } from '@/lib/db/queries';
 import { generateUUID } from '@/lib/utils';
 import { postRequestBodySchema } from './schema';
@@ -205,7 +207,7 @@ export async function POST(request: Request) {
                     console.log(`[AI Step] Executed ${toolCalls.length} tools`);
                     toolCalls.forEach(tc => {
                         console.log(`[AI Step] Tool Call: ${tc.toolName}`);
-                        console.log(`[AI Step] Params:`, JSON.stringify(tc.args, null, 2));
+                        console.log(`[AI Step] Params:`, JSON.stringify((tc as any).args, null, 2));
                     });
                 }
             },
@@ -225,6 +227,23 @@ export async function POST(request: Request) {
                         },
                     ],
                 });
+
+                // Generate title for new chats
+                if (previousMessages.length === 0) {
+                    try {
+                        const { text: title } = await generateText({
+                            model: myProvider,
+                            system: 'You are a helpful assistant. Generate a short, concise, and descriptive title (max 5 words) for the following chat conversation. Do not use quotes or special characters. strictly return the title only.',
+                            prompt: `User: ${currentMessageContent}\nAssistant: ${text}`,
+                        });
+
+                        if (title) {
+                            await updateChatTitle({ id, title: title.trim() });
+                        }
+                    } catch (error) {
+                        console.error('Error generating chat title:', error);
+                    }
+                }
             },
         });
 

@@ -4,11 +4,14 @@ import { Conversation } from '@/types';
 import { ScrollArea } from './ui/scroll-area';
 import { ConversationHeader } from './conversation-header';
 import { MessageInput } from './message-input';
+import { TypingIndicator } from './typing-indicator';
+import { LoadingSkeleton } from './loading-skeleton';
 import { cn, generateUUID } from '@/lib/utils';
 import { useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
+import { Check, CheckCheck, Clock } from 'lucide-react';
 
 interface ChatAreaProps {
     chatId: string;
@@ -21,10 +24,10 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAreaProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
+    const [showTimestamps, setShowTimestamps] = useState(false);
 
     const { messages, sendMessage, status, setMessages } = useChat({
         id: chatId,
-        // Ensure messages have UUIDs to match database schema
         generateId: generateUUID,
         transport: new DefaultChatTransport({
             api: '/api/chat',
@@ -46,12 +49,11 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
         sendMessage({ text });
     };
 
-    const { data: initialMessages } = useSWR(
+    const { data: initialMessages, isLoading: isLoadingMessages } = useSWR(
         `/api/messages?chatId=${chatId}`,
         fetcher
     );
 
-    // Populate initial messages when fetched
     // Populate initial messages when fetched
     useEffect(() => {
         if (initialMessages && messages.length === 0) {
@@ -69,7 +71,7 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
         if (scrollRef.current) {
             scrollRef.current.scrollIntoView({ behavior: 'smooth' });
         }
-    }, [messages]);
+    }, [messages, status]);
 
     // Create a pseudo-Conversation object for compatibility with Header
     const activeConversation: any = {
@@ -81,51 +83,124 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
         unreadCount: 0
     };
 
+    const getMessageStatus = (message: any) => {
+        if (message.role !== 'user') return null;
+
+        // Simple status logic - in production, this would come from the message metadata
+        return 'sent'; // Could be 'sending', 'sent', 'error'
+    };
+
+    const formatTimestamp = (date: Date) => {
+        return new Intl.DateTimeFormat('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        }).format(date);
+    };
+
     return (
-        <div className="flex flex-col h-full bg-background relative w-full">
-            <ConversationHeader isMobileView={isMobileView} onBack={onBack} activeConversation={activeConversation} />
+        <div className="flex flex-col h-full bg-background/50 relative w-full">
+            <ConversationHeader
+                isMobileView={isMobileView}
+                onBack={onBack}
+                activeConversation={activeConversation}
+            />
 
             <div className="flex-1 relative overflow-hidden">
-                <ScrollArea className="h-full px-4">
-                    <div className="py-4 space-y-4 max-w-3xl mx-auto">
-                        {messages.map((m) => (
-                            <div key={m.id} className={cn("flex flex-col w-full", m.role === 'user' ? "items-end" : "items-start")}>
-                                <div className={cn("flex w-full", m.role === 'user' ? "justify-end" : "justify-start")}>
+                {isLoadingMessages ? (
+                    <LoadingSkeleton type="message" count={4} />
+                ) : (
+                    <ScrollArea className="h-full px-4">
+                        <div className="py-6 space-y-6 max-w-3xl mx-auto">
+                            {messages.map((m, index) => {
+                                const messageStatus = getMessageStatus(m);
+                                const messageDate = (m as any).createdAt;
+                                const showTime = showTimestamps && messageDate;
+
+                                return (
                                     <div
+                                        key={m.id}
                                         className={cn(
-                                            "max-w-[75%] p-3 px-4 rounded-2xl text-[15px] leading-relaxed break-words whitespace-pre-wrap",
-                                            m.role === 'user'
-                                                ? "bg-blue-500 text-white rounded-br-none"
-                                                : "bg-secondary text-secondary-foreground rounded-bl-none"
+                                            "flex flex-col w-full animate-message-in opacity-0",
+                                            m.role === 'user' ? "items-end" : "items-start"
                                         )}
+                                        style={{ animationDelay: `${index * 50}ms` }}
                                     >
-                                        {m.parts.map((part, index) =>
-                                            part.type === 'text' ? <span key={index}>{part.text}</span> : null
+                                        <div className={cn("flex w-full items-end gap-2", m.role === 'user' ? "justify-end" : "justify-start")}>
+                                            <div
+                                                className={cn(
+                                                    "max-w-[80%] p-3.5 px-5 text-[15px] leading-relaxed break-words shadow-sm transition-all duration-200 hover:shadow-md group",
+                                                    m.role === 'user'
+                                                        ? "bg-primary text-primary-foreground rounded-[20px] rounded-br-sm"
+                                                        : "bg-card border border-border/50 text-foreground rounded-[20px] rounded-bl-sm"
+                                                )}
+                                            >
+                                                {m.parts.map((part, index) =>
+                                                    part.type === 'text' ? (
+                                                        <span key={index} className="whitespace-pre-wrap">
+                                                            {part.text}
+                                                        </span>
+                                                    ) : null
+                                                )}
+
+                                                {/* Message metadata */}
+                                                {showTime && (
+                                                    <div className={cn(
+                                                        "text-[10px] mt-1.5 flex items-center gap-1",
+                                                        m.role === 'user' ? "text-primary-foreground/70" : "text-muted-foreground"
+                                                    )}>
+                                                        {formatTimestamp(messageDate)}
+                                                        {messageStatus && m.role === 'user' && (
+                                                            <>
+                                                                <span>•</span>
+                                                                <CheckCheck className="w-3 h-3" />
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Tool usage indicator */}
+                                        {m.parts.some(p => p.type.startsWith('tool-')) && (
+                                            <div className="mt-2 text-xs text-muted-foreground bg-muted/30 border border-border/50 p-2 rounded-lg max-w-[80%] ml-1">
+                                                {m.parts.filter(p => p.type.startsWith('tool-')).map((part, index) => (
+                                                    <div key={index} className="flex gap-2 items-center py-1">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                                                        <span className="font-medium font-mono text-[10px] uppercase tracking-wider">
+                                                            {part.type.replace('tool-', '')}
+                                                        </span>
+                                                        <span className="opacity-70">
+                                                            {'result' in part ? 'Completed' : 'Running...'}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         )}
                                     </div>
+                                );
+                            })}
+
+                            {/* Typing indicator */}
+                            {status === 'streaming' && (
+                                <div className="flex justify-start animate-in fade-in duration-300">
+                                    <TypingIndicator />
                                 </div>
-                                {m.parts.some(p => p.type.startsWith('tool-')) && (
-                                    <div className="mt-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded-lg max-w-[75%]">
-                                        {m.parts.filter(p => p.type.startsWith('tool-')).map((part, index) => (
-                                            <div key={index} className="flex gap-2 items-center">
-                                                <span className="font-mono">{part.type}</span>
-                                                <span>{'result' in part ? '✅' : '⏳'}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                        <div ref={scrollRef} />
-                    </div>
-                </ScrollArea>
+                            )}
+
+                            <div ref={scrollRef} className="h-4" />
+                        </div>
+                    </ScrollArea>
+                )}
             </div>
 
-            <div className="w-full bg-background/80 backdrop-blur pb-safe">
-                <MessageInput
-                    onSendMessage={handleSendMessage}
-                    disabled={status !== 'ready'}
-                />
+            <div className="w-full bg-background/60 backdrop-blur-xl border-t border-border/40 pb-safe z-10">
+                <div className="max-w-3xl mx-auto">
+                    <MessageInput
+                        onSendMessage={handleSendMessage}
+                        disabled={status === 'streaming' || status === 'submitted'}
+                    />
+                </div>
             </div>
         </div>
     )

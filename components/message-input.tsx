@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Icons } from "./icons";
+import { cn } from "@/lib/utils";
 
 interface MessageInputProps {
     onSendMessage: (text: string) => void;
@@ -16,22 +17,32 @@ export function MessageInput({ onSendMessage, disabled }: MessageInputProps) {
     }
 
     return (
-        <div className="p-4 border-t bg-background w-full">
-            <div className="flex gap-2 items-center max-w-3xl mx-auto w-full">
+        <div className="p-4 w-full">
+            <div className="relative flex items-center w-full">
                 <input
-                    className="flex-1 bg-muted/50 border-0 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className={cn(
+                        "w-full bg-muted/50 border border-transparent rounded-[24px] px-5 pl-5 pr-14 py-3.5",
+                        "focus:outline-none focus:bg-background focus:border-border/50 focus:ring-2 focus:ring-primary/10 shadow-sm transition-all duration-200",
+                        "placeholder:text-muted-foreground/50 text-base"
+                    )}
                     value={value}
                     onChange={e => setValue(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && !disabled && handleSend()}
-                    placeholder="Type a message..."
+                    placeholder="Type a message to start..."
                     disabled={disabled}
+                    autoComplete="off"
                 />
                 <button
                     onClick={handleSend}
                     disabled={!value.trim() || disabled}
-                    className="bg-blue-500 text-white p-2.5 rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className={cn(
+                        "absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full transition-all duration-200",
+                        !value.trim() || disabled
+                            ? "bg-transparent text-muted-foreground/30 cursor-not-allowed"
+                            : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                    )}
                 >
-                    <Icons.arrowUp className="h-5 w-5" strokeWidth={3} />
+                    <Icons.arrowUp className="h-5 w-5" strokeWidth={2.5} />
                 </button>
             </div>
         </div>

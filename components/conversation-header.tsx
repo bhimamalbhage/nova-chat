@@ -1,5 +1,6 @@
 import { Icons } from "./icons";
 import { Conversation } from "@/types";
+import { cn } from "@/lib/utils";
 
 interface ConversationHeaderProps {
     isMobileView?: boolean;
@@ -11,14 +12,20 @@ export function ConversationHeader({ isMobileView, onBack, activeConversation }:
     const title = activeConversation?.name || activeConversation?.recipients.map(r => r.name).join(", ");
 
     return (
-        <div className="flex items-center px-4 py-2 border-b bg-background/50 backdrop-blur-md h-16 w-full z-10 sticky top-0">
+        <div className="flex items-center px-6 py-3 border-b border-border/40 bg-background/60 backdrop-blur-xl h-[60px] w-full z-20 sticky top-0">
             {isMobileView && (
-                <button onClick={onBack} className="mr-4 p-2 hover:bg-muted rounded-full">
-                    <Icons.back className="h-6 w-6" />
+                <button
+                    onClick={onBack}
+                    className="mr-3 p-2 -ml-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-full transition-colors"
+                >
+                    <Icons.back className="h-5 w-5" />
                 </button>
             )}
-            <div className="font-semibold text-lg line-clamp-1">
-                {title || "New Chat"}
+            <div className="flex flex-col justify-center">
+                <div className="font-semibold text-[15px] leading-tight line-clamp-1 tracking-tight">
+                    {title || "New Chat"}
+                </div>
+                {/* Optional: Add status or member count for more detail */}
             </div>
         </div>
     )

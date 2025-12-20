@@ -5,13 +5,17 @@ import { Sidebar } from "./sidebar";
 import { ChatArea } from "./chat-area";
 import { MemoryGraphView } from "./memory-graph-view";
 import { IntegrationsSettings } from "./integrations-settings";
+import { WelcomeState } from "./welcome-state";
+import { LoadingSkeleton } from "./loading-skeleton";
+import { ThemeToggle } from "./theme-toggle";
 import type { Conversation } from "@/types";
 import { nanoid } from "nanoid";
 import useSWR, { mutate } from "swr";
 import { generateChatId } from "@/lib/utils";
 import { useRouter } from 'next/navigation';
-import { User, MessageSquarePlus, LogOut, Settings } from "lucide-react";
+import { User, MessageSquarePlus, LogOut, Settings, Sparkles } from "lucide-react";
 import { Button } from "./ui/button";
+import { cn } from "@/lib/utils";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -24,18 +28,15 @@ export default function App() {
     const [currentView, setCurrentView] = useState<View>("chat");
     const router = useRouter();
 
-    const { data: history, error, mutate: mutateHistory } = useSWR<any[]>('/api/history', fetcher, {
+    const { data: history, error, mutate: mutateHistory, isLoading } = useSWR<any[]>('/api/history', fetcher, {
         fallbackData: [],
     });
 
     const conversations: Conversation[] = history?.map(chat => ({
         id: chat.id,
         name: chat.title || 'New Chat',
-        recipients: [], // Metadata typically
-        messages: [], // We don't load all messages for all chats heavily here, Sidebar assumes some structure. 
-        // Sidebar typically needs last message time.
-        // Our API response needs to include lastMessageTime if we want sorting.
-        // For now, mapping simplified.
+        recipients: [],
+        messages: [],
         lastMessageTime: chat.createdAt,
         unreadCount: 0,
         pinned: false,
@@ -52,21 +53,13 @@ export default function App() {
     }, []);
 
     const handleDeleteConversation = async (id: string) => {
-        // Optimistic update
         mutateHistory(history?.filter(c => c.id !== id), false);
-
-        // Call Server Action or API to delete
-        // For now just local state simulation but we should call API
-        // const res = await fetch(`/api/chat?id=${id}`, { method: 'DELETE' });
-        // mutateHistory(); 
-        // Since we don't have delete endpoint fully wired in App yet, leaving as UI only for now
     };
 
     const handleNewChat = () => {
         const newId = generateChatId();
         setActiveConversationId(newId);
         setCurrentView("chat");
-        // We will let ChatArea handle the actual creation on first message
     };
 
     const handleLogout = async () => {
@@ -76,7 +69,6 @@ export default function App() {
             });
 
             if (response.ok) {
-                // Redirect to login page
                 router.push('/login');
             } else {
                 console.error('Logout failed');
@@ -86,25 +78,7 @@ export default function App() {
         }
     };
 
-    // Derived state for showing sidebar/content
-    // Mobile: Show sidebar if no active chat AND not viewing profile (or maybe profile replaces sidebar?)
-    // Actually, on mobile:
-    // - List view: sidebar visible
-    // - Chat Detail: chat area visible
-    // - Profile Detail: profile area visible
-
-    // For simplicity:
-    // Show Sidebar if: Desktop OR (Mobile AND no active conversation AND not profile ?? wait)
-    // If we are on mobile, we need to hide sidebar when viewing profile.
-
     const showSidebar = !isMobileView || (!activeConversationId && currentView === "chat");
-    // const showChat = !isMobileView || (activeConversationId && currentView === "chat");
-    // const showProfile = currentView === "profile";
-
-    // On mobile, if showProfile is true, we hide sidebar and chat.
-    // Ensure logic:
-    // Desktop: Sidebar | Content (Chat or Profile)
-    // Mobile: Sidebar OR Content (Chat or Profile)
 
     const renderContent = () => {
         if (currentView === "integrations") {
@@ -138,50 +112,66 @@ export default function App() {
         if (activeConversationId) {
             return (
                 <ChatArea
-                    key={activeConversationId} // Force re-mount on chat change
+                    key={activeConversationId}
                     chatId={activeConversationId}
                     isMobileView={isMobileView}
                     onBack={() => setActiveConversationId(null)}
-                    onNewMessage={() => mutateHistory()} // Refresh list on new message
+                    onNewMessage={() => {
+                        mutateHistory();
+                        // Refresh again to catch the auto-generated title
+                        setTimeout(() => mutateHistory(), 2000);
+                        setTimeout(() => mutateHistory(), 4000);
+                    }}
                 />
             );
         }
 
-        // Empty state when no chat selected and not profile (Desktop)
+        // Welcome state when no chat selected (Desktop)
         return (
-            <div className="flex h-full items-center justify-center text-muted-foreground bg-background">
-                Select a conversation or start a new one
-            </div>
+            <WelcomeState
+                onNewChat={handleNewChat}
+                onViewProfile={() => setCurrentView("profile")}
+            />
         );
     };
 
     return (
         <div className="flex h-dvh w-full bg-background overflow-hidden">
-            {/* Sidebar Logic */}
-            {(!isMobileView || (!activeConversationId && currentView !== "profile")) && (
-                <div className={`${isMobileView ? "w-full" : "w-[320px] max-w-[320px] border-r"} flex-shrink-0 relative z-20 bg-background`}>
-                    <Sidebar
-                        conversations={conversations}
-                        activeConversation={activeConversationId}
-                        onSelectConversation={(id) => {
-                            setActiveConversationId(id);
-                            setCurrentView("chat");
-                        }}
-                        onDeleteConversation={handleDeleteConversation}
-                        onUpdateConversation={() => { }}
-                        isMobileView={isMobileView}
-                        searchTerm={searchTerm}
-                        onSearchChange={setSearchTerm}
-                    >
-                        <div className="p-2 space-y-2">
+            {/* Sidebar */}
+            {(!isMobileView || (!activeConversationId && currentView !== "profile" && currentView !== "integrations")) && (
+                <div className={cn(
+                    "flex-shrink-0 relative z-20 flex flex-col",
+                    isMobileView ? "w-full" : "w-[320px] max-w-[320px]"
+                )}>
+                    {/* Fixed Header - Always Visible */}
+                    <div className={cn(
+                        "border-r border-border/40",
+                        isMobileView ? "bg-background" : "bg-muted/30 backdrop-blur-xl"
+                    )}>
+                        {/* Enhanced Navigation Header */}
+                        <div className="p-3 space-y-1 border-b border-border/40">
+                            <div className="flex items-center gap-2 px-2 py-3 mb-2">
+                                <div className="p-2 bg-primary/10 rounded-lg">
+                                    <Sparkles className="h-5 w-5 text-primary" strokeWidth={2} />
+                                </div>
+                                <div className="flex-1">
+                                    <h2 className="font-semibold text-sm tracking-tight">Nova Chat</h2>
+                                </div>
+                                <ThemeToggle />
+                            </div>
+
                             <Button
-                                variant="ghost"
-                                className="w-full justify-start gap-2"
+                                variant={activeConversationId && !conversations.find(c => c.id === activeConversationId) ? "secondary" : "default"}
+                                className="w-full justify-start gap-2 shadow-sm"
                                 onClick={handleNewChat}
                             >
                                 <MessageSquarePlus className="h-4 w-4" />
                                 New Chat
                             </Button>
+                        </div>
+
+                        {/* Navigation Buttons */}
+                        <div className="p-3 space-y-1 border-b border-border/40">
                             <Button
                                 variant={currentView === "profile" ? "secondary" : "ghost"}
                                 className="w-full justify-start gap-2"
@@ -191,7 +181,7 @@ export default function App() {
                                 }}
                             >
                                 <User className="h-4 w-4" />
-                                Profile
+                                Memory Profile
                             </Button>
                             <Button
                                 variant={currentView === "integrations" ? "secondary" : "ghost"}
@@ -204,6 +194,10 @@ export default function App() {
                                 <Settings className="h-4 w-4" />
                                 Integrations
                             </Button>
+                        </div>
+
+                        {/* Logout at bottom of fixed header */}
+                        <div className="p-3 border-b border-border/40">
                             <Button
                                 variant="ghost"
                                 className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
@@ -213,12 +207,27 @@ export default function App() {
                                 Logout
                             </Button>
                         </div>
-                    </Sidebar>
+                    </div>
+
+                    {/* Scrollable Sidebar Content */}
+                    <Sidebar
+                        conversations={conversations}
+                        activeConversation={activeConversationId}
+                        onSelectConversation={(id) => {
+                            setActiveConversationId(id);
+                            setCurrentView("chat");
+                        }}
+                        onDeleteConversation={handleDeleteConversation}
+                        onUpdateConversation={() => { }}
+                        isMobileView={isMobileView}
+                        searchTerm={searchTerm}
+                        onSearchChange={setSearchTerm}
+                    />
                 </div>
             )}
 
             {/* Main Content Area */}
-            {(!isMobileView || activeConversationId || currentView === "profile") && (
+            {(!isMobileView || activeConversationId || currentView === "profile" || currentView === "integrations") && (
                 <main className="flex-1 w-full min-w-0 relative z-10 bg-background">
                     {renderContent()}
                 </main>
