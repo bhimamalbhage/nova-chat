@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, CheckCircle2, XCircle, Loader2, ExternalLink } from "lucide-react";
+import { Mail, Calendar, CheckCircle2, XCircle, Loader2, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-interface GmailStatus {
+interface IntegrationStatus {
     connected: boolean;
     account?: {
         id: string;
@@ -17,19 +17,28 @@ interface GmailStatus {
 }
 
 export function IntegrationsSettings() {
-    const [gmailStatus, setGmailStatus] = useState<GmailStatus | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isConnecting, setIsConnecting] = useState(false);
-    const [isDisconnecting, setIsDisconnecting] = useState(false);
+    const [gmailStatus, setGmailStatus] = useState<IntegrationStatus | null>(null);
+    const [calendarStatus, setCalendarStatus] = useState<IntegrationStatus | null>(null);
+
+    const [isLoadingGmail, setIsLoadingGmail] = useState(true);
+    const [isLoadingCalendar, setIsLoadingCalendar] = useState(true);
+
+    const [isConnectingGmail, setIsConnectingGmail] = useState(false);
+    const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
+
+    const [isDisconnectingGmail, setIsDisconnectingGmail] = useState(false);
+    const [isDisconnectingCalendar, setIsDisconnectingCalendar] = useState(false);
+
     const { toast } = useToast();
 
     useEffect(() => {
         checkGmailStatus();
+        checkCalendarStatus();
     }, []);
 
     const checkGmailStatus = async () => {
         try {
-            setIsLoading(true);
+            setIsLoadingGmail(true);
             const response = await fetch('/api/integrations/gmail/status');
             const data = await response.json();
             setGmailStatus(data);
@@ -41,13 +50,27 @@ export function IntegrationsSettings() {
                 variant: "destructive",
             });
         } finally {
-            setIsLoading(false);
+            setIsLoadingGmail(false);
+        }
+    };
+
+    const checkCalendarStatus = async () => {
+        try {
+            setIsLoadingCalendar(true);
+            const response = await fetch('/api/integrations/google-calendar/status');
+            const data = await response.json();
+            setCalendarStatus(data);
+        } catch (error) {
+            console.error('Failed to check Calendar status:', error);
+            // Don't toast for initial check failure to avoid spamming if not connected
+        } finally {
+            setIsLoadingCalendar(false);
         }
     };
 
     const handleConnectGmail = async () => {
         try {
-            setIsConnecting(true);
+            setIsConnectingGmail(true);
             const response = await fetch('/api/integrations/gmail/connect', {
                 method: 'POST',
             });
@@ -72,13 +95,44 @@ export function IntegrationsSettings() {
                 variant: "destructive",
             });
         } finally {
-            setIsConnecting(false);
+            setIsConnectingGmail(false);
+        }
+    };
+
+    const handleConnectCalendar = async () => {
+        try {
+            setIsConnectingCalendar(true);
+            const response = await fetch('/api/integrations/google-calendar/connect', {
+                method: 'POST',
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.redirectUrl) {
+                // Open Composio OAuth flow in new window
+                window.location.href = data.redirectUrl;
+            } else {
+                toast({
+                    title: "Error",
+                    description: data.error || "Failed to initiate Calendar connection",
+                    variant: "destructive",
+                });
+            }
+        } catch (error) {
+            console.error('Failed to connect Calendar:', error);
+            toast({
+                title: "Error",
+                description: "Failed to initiate Calendar connection",
+                variant: "destructive",
+            });
+        } finally {
+            setIsConnectingCalendar(false);
         }
     };
 
     const handleDisconnectGmail = async () => {
         try {
-            setIsDisconnecting(true);
+            setIsDisconnectingGmail(true);
             const response = await fetch('/api/integrations/gmail/disconnect', {
                 method: 'POST',
             });
@@ -90,7 +144,6 @@ export function IntegrationsSettings() {
                     title: "Success",
                     description: "Gmail account disconnected successfully",
                 });
-                // Refresh status
                 await checkGmailStatus();
             } else {
                 toast({
@@ -107,7 +160,41 @@ export function IntegrationsSettings() {
                 variant: "destructive",
             });
         } finally {
-            setIsDisconnecting(false);
+            setIsDisconnectingGmail(false);
+        }
+    };
+
+    const handleDisconnectCalendar = async () => {
+        try {
+            setIsDisconnectingCalendar(true);
+            const response = await fetch('/api/integrations/google-calendar/disconnect', {
+                method: 'POST',
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                toast({
+                    title: "Success",
+                    description: "Calendar account disconnected successfully",
+                });
+                await checkCalendarStatus();
+            } else {
+                toast({
+                    title: "Error",
+                    description: data.error || "Failed to disconnect Calendar",
+                    variant: "destructive",
+                });
+            }
+        } catch (error) {
+            console.error('Failed to disconnect Calendar:', error);
+            toast({
+                title: "Error",
+                description: "Failed to disconnect Calendar",
+                variant: "destructive",
+            });
+        } finally {
+            setIsDisconnectingCalendar(false);
         }
     };
 
@@ -120,6 +207,7 @@ export function IntegrationsSettings() {
                 </p>
             </div>
 
+            {/* Gmail Card */}
             <Card>
                 <CardHeader>
                     <div className="flex items-center justify-between">
@@ -134,7 +222,7 @@ export function IntegrationsSettings() {
                                 </CardDescription>
                             </div>
                         </div>
-                        {isLoading ? (
+                        {isLoadingGmail ? (
                             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                         ) : gmailStatus?.connected ? (
                             <div className="flex items-center gap-2 text-green-600">
@@ -163,9 +251,9 @@ export function IntegrationsSettings() {
                                     <Button
                                         variant="outline"
                                         onClick={checkGmailStatus}
-                                        disabled={isLoading}
+                                        disabled={isLoadingGmail}
                                     >
-                                        {isLoading ? (
+                                        {isLoadingGmail ? (
                                             <>
                                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                                 Checking...
@@ -177,9 +265,9 @@ export function IntegrationsSettings() {
                                     <Button
                                         variant="destructive"
                                         onClick={handleDisconnectGmail}
-                                        disabled={isDisconnecting}
+                                        disabled={isDisconnectingGmail}
                                     >
-                                        {isDisconnecting ? (
+                                        {isDisconnectingGmail ? (
                                             <>
                                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                                 Disconnecting...
@@ -206,10 +294,10 @@ export function IntegrationsSettings() {
                         ) : (
                             <Button
                                 onClick={handleConnectGmail}
-                                disabled={isConnecting}
+                                disabled={isConnectingGmail}
                                 className="gap-2"
                             >
-                                {isConnecting ? (
+                                {isConnectingGmail ? (
                                     <>
                                         <Loader2 className="h-4 w-4 animate-spin" />
                                         Connecting...
@@ -223,10 +311,112 @@ export function IntegrationsSettings() {
                                 )}
                             </Button>
                         )}
-
                         {gmailStatus?.error && (
                             <p className="text-sm text-destructive">
                                 Error: {gmailStatus.error}
+                            </p>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Google Calendar Card */}
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-primary/10 rounded-lg">
+                                <Calendar className="h-6 w-6 text-primary" />
+                            </div>
+                            <div>
+                                <CardTitle>Google Calendar</CardTitle>
+                                <CardDescription>
+                                    Manage your schedule and events through AI
+                                </CardDescription>
+                            </div>
+                        </div>
+                        {isLoadingCalendar ? (
+                            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                        ) : calendarStatus?.connected ? (
+                            <div className="flex items-center gap-2 text-green-600">
+                                <CheckCircle2 className="h-5 w-5" />
+                                <span className="text-sm font-medium">Connected</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                <XCircle className="h-5 w-5" />
+                                <span className="text-sm font-medium">Not Connected</span>
+                            </div>
+                        )}
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        <p className="text-sm text-muted-foreground">
+                            {calendarStatus?.connected
+                                ? "Your Google Calendar is connected. The AI can now create, list, and manage events on your behalf."
+                                : "Connect your Google Calendar to enable the AI to help manage your schedule."}
+                        </p>
+
+                        {calendarStatus?.connected ? (
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-4 flex-wrap">
+                                    <Button
+                                        variant="outline"
+                                        onClick={checkCalendarStatus}
+                                        disabled={isLoadingCalendar}
+                                    >
+                                        {isLoadingCalendar ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Checking...
+                                            </>
+                                        ) : (
+                                            "Refresh Status"
+                                        )}
+                                    </Button>
+                                    <Button
+                                        variant="destructive"
+                                        onClick={handleDisconnectCalendar}
+                                        disabled={isDisconnectingCalendar}
+                                    >
+                                        {isDisconnectingCalendar ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Disconnecting...
+                                            </>
+                                        ) : (
+                                            "Disconnect Calendar"
+                                        )}
+                                    </Button>
+                                    <p className="text-xs text-muted-foreground">
+                                        Connected on {calendarStatus.account?.createdAt ? new Date(calendarStatus.account.createdAt).toLocaleDateString() : 'Unknown'}
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <Button
+                                onClick={handleConnectCalendar}
+                                disabled={isConnectingCalendar}
+                                className="gap-2"
+                            >
+                                {isConnectingCalendar ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Connecting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Calendar className="h-4 w-4" />
+                                        Connect Calendar
+                                        <ExternalLink className="h-3 w-3" />
+                                    </>
+                                )}
+                            </Button>
+                        )}
+                        {calendarStatus?.error && (
+                            <p className="text-sm text-destructive">
+                                Error: {calendarStatus.error}
                             </p>
                         )}
                     </div>
@@ -237,7 +427,7 @@ export function IntegrationsSettings() {
                 <CardHeader>
                     <CardTitle className="text-base">More Integrations Coming Soon</CardTitle>
                     <CardDescription>
-                        We're working on adding more integrations like Google Calendar, Slack, and more.
+                        We're working on adding more integrations like Slack, Notion, and more.
                     </CardDescription>
                 </CardHeader>
             </Card>

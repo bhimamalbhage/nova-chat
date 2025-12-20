@@ -23,7 +23,12 @@ export async function createComposioTools(apiKey: string, externalUserId: string
             "GMAIL_FETCH_EMAILS",
             "GMAIL_FETCH_MESSAGE_BY_MESSAGE_ID",
             "GMAIL_REPLY_TO_THREAD",
-            "GMAIL_CREATE_EMAIL_DRAFT"
+            "GMAIL_CREATE_EMAIL_DRAFT",
+            "GOOGLECALENDAR_CREATE_EVENT",
+            "GOOGLECALENDAR_LIST_EVENTS",
+            "GOOGLECALENDAR_UPDATE_EVENT",
+            "GOOGLECALENDAR_DELETE_EVENT",
+            "GOOGLECALENDAR_FIND_EVENT"
         ];
 
         for (const toolName of additionalTools) {
