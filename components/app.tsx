@@ -4,17 +4,18 @@ import { useState, useEffect } from "react";
 import { Sidebar } from "./sidebar";
 import { ChatArea } from "./chat-area";
 import { MemoryGraphView } from "./memory-graph-view";
+import { IntegrationsSettings } from "./integrations-settings";
 import type { Conversation } from "@/types";
 import { nanoid } from "nanoid";
 import useSWR, { mutate } from "swr";
 import { generateChatId } from "@/lib/utils";
 import { useRouter } from 'next/navigation';
-import { User, MessageSquarePlus } from "lucide-react";
+import { User, MessageSquarePlus, LogOut, Settings } from "lucide-react";
 import { Button } from "./ui/button";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-type View = "chat" | "profile";
+type View = "chat" | "profile" | "integrations";
 
 export default function App() {
     const [isMobileView, setIsMobileView] = useState(false);
@@ -68,6 +69,23 @@ export default function App() {
         // We will let ChatArea handle the actual creation on first message
     };
 
+    const handleLogout = async () => {
+        try {
+            const response = await fetch('/api/logout', {
+                method: 'POST',
+            });
+
+            if (response.ok) {
+                // Redirect to login page
+                router.push('/login');
+            } else {
+                console.error('Logout failed');
+            }
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    };
+
     // Derived state for showing sidebar/content
     // Mobile: Show sidebar if no active chat AND not viewing profile (or maybe profile replaces sidebar?)
     // Actually, on mobile:
@@ -89,6 +107,21 @@ export default function App() {
     // Mobile: Sidebar OR Content (Chat or Profile)
 
     const renderContent = () => {
+        if (currentView === "integrations") {
+            return (
+                <div className="h-full w-full relative overflow-auto">
+                    {isMobileView && (
+                        <div className="absolute top-4 left-4 z-50">
+                            <Button variant="ghost" size="sm" onClick={() => setCurrentView("chat")}>Back</Button>
+                        </div>
+                    )}
+                    <div className="max-w-4xl mx-auto p-6">
+                        <IntegrationsSettings />
+                    </div>
+                </div>
+            );
+        }
+
         if (currentView === "profile") {
             return (
                 <div className="h-full w-full relative">
@@ -159,6 +192,25 @@ export default function App() {
                             >
                                 <User className="h-4 w-4" />
                                 Profile
+                            </Button>
+                            <Button
+                                variant={currentView === "integrations" ? "secondary" : "ghost"}
+                                className="w-full justify-start gap-2"
+                                onClick={() => {
+                                    setCurrentView("integrations");
+                                    setActiveConversationId(null);
+                                }}
+                            >
+                                <Settings className="h-4 w-4" />
+                                Integrations
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={handleLogout}
+                            >
+                                <LogOut className="h-4 w-4" />
+                                Logout
                             </Button>
                         </div>
                     </Sidebar>

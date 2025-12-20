@@ -1,4 +1,5 @@
 import { Toaster } from "sonner";
+import { Toaster as CustomToaster } from "@/components/ui/toaster";
 import type { Metadata } from "next";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -64,6 +65,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Toaster position="top-center" />
+          <CustomToaster />
           <TooltipProvider>
             {children}
           </TooltipProvider>
