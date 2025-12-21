@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { SearchBar } from "./search-bar";
 import { ConversationItem } from "./conversation-item";
 import { ScrollArea } from "./ui/scroll-area";
+import { ThemeToggle } from "./theme-toggle"; // Added import
 import { format, isToday, isYesterday, isThisWeek, parseISO } from "date-fns";
 import { useTheme } from "next-themes";
 
@@ -107,8 +108,8 @@ export function Sidebar({
     return (
         <div
             className={cn(
-                "flex flex-col h-full",
-                isMobileView ? "bg-background" : "bg-muted"
+                "flex flex-col h-full border-r border-white/5",
+                isMobileView ? "bg-background" : "glass"
             )}
         >
             {children}
@@ -127,17 +128,17 @@ export function Sidebar({
                     withVerticalMargins={false}
                     bottomMargin="0px"
                 >
-                    <div className={`${isMobileView ? "w-full" : "w-[320px]"} px-2`}>
+                    <div className={`${isMobileView ? "w-full" : "w-[320px]"} px-3 py-2 space-y-2`}>
                         <SearchBar value={searchTerm} onChange={onSearchChange} />
-                        <div className="w-full">
+                        <div className="w-full pt-2">
                             {filteredConversations.length === 0 && searchTerm ? (
-                                <div className="py-2">
-                                    <p className="text-sm text-muted-foreground px-2 mt-4">
+                                <div className="py-8 text-center">
+                                    <p className="text-sm text-muted-foreground">
                                         No results found
                                     </p>
                                 </div>
                             ) : (
-                                <>
+                                <div className="space-y-1">
                                     {filteredConversations.map((conversation, index, array) => {
                                         const isActive = conversation.id === activeConversation;
                                         const nextConversation = array[index + 1];
@@ -161,21 +162,23 @@ export function Sidebar({
                                                 formatTime={formatTime}
                                                 getInitials={getInitials}
                                                 isMobileView={isMobileView}
-                                                showDivider={
-                                                    !isActive &&
-                                                    !isNextActive &&
-                                                    index !== array.length - 1
-                                                }
+                                                showDivider={false} // Removed divider for cleaner look
                                                 openSwipedConvo={openSwipedConvo}
                                                 setOpenSwipedConvo={setOpenSwipedConvo}
                                             />
                                         );
                                     })}
-                                </>
+                                </div>
                             )}
                         </div>
                     </div>
                 </ScrollArea>
+            </div>
+            <div className="p-3 border-t border-white/5 flex justify-between items-center bg-black/10 backdrop-blur-sm">
+                <div className="text-xs text-muted-foreground/60 px-2">
+                    Nova Chat v0.1
+                </div>
+                <ThemeToggle />
             </div>
         </div>
     );

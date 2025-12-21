@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Icons } from "./icons";
+import { cn } from "@/lib/utils";
 
 interface MessageInputProps {
     onSendMessage: (text: string) => void;
@@ -16,20 +17,30 @@ export function MessageInput({ onSendMessage, disabled }: MessageInputProps) {
     }
 
     return (
-        <div className="p-4 border-t bg-background w-full">
-            <div className="flex gap-2 items-center max-w-3xl mx-auto w-full">
+        <div className="p-4 px-6 w-full mb-4">
+            <div className="relative flex items-center w-full group">
                 <input
-                    className="flex-1 bg-muted/50 border-0 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className={cn(
+                        "w-full bg-card/40 backdrop-blur-xl border border-white/10 rounded-[28px] px-6 pl-6 pr-14 py-4",
+                        "focus:outline-none focus:bg-card/60 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 shadow-lg transition-all duration-300",
+                        "placeholder:text-muted-foreground/60 text-[15px] text-foreground"
+                    )}
                     value={value}
                     onChange={e => setValue(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && !disabled && handleSend()}
-                    placeholder="Type a message..."
+                    placeholder="Ask anything..."
                     disabled={disabled}
+                    autoComplete="off"
                 />
                 <button
                     onClick={handleSend}
                     disabled={!value.trim() || disabled}
-                    className="bg-blue-500 text-white p-2.5 rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className={cn(
+                        "absolute right-2 top-1/2 -translate-y-1/2 p-2.5 rounded-full transition-all duration-300 scale-95 hover:scale-100 active:scale-95",
+                        !value.trim() || disabled
+                            ? "bg-transparent text-muted-foreground/20 cursor-not-allowed"
+                            : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20"
+                    )}
                 >
                     <Icons.arrowUp className="h-5 w-5" strokeWidth={3} />
                 </button>
