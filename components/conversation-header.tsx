@@ -12,7 +12,7 @@ export function ConversationHeader({ isMobileView, onBack, activeConversation }:
     const title = activeConversation?.name || activeConversation?.recipients.map(r => r.name).join(", ");
 
     return (
-        <div className="flex items-center px-6 py-3 border-b border-border/40 bg-background/60 backdrop-blur-xl h-[60px] w-full z-20 sticky top-0">
+        <div className="flex items-center px-6 py-3 border-b border-white/5 glass h-[64px] w-full z-20 sticky top-0">
             {isMobileView && (
                 <button
                     onClick={onBack}

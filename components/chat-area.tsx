@@ -99,7 +99,7 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
     };
 
     return (
-        <div className="flex flex-col h-full bg-background/50 relative w-full">
+        <div className="flex flex-col h-full bg-transparent relative w-full">
             <ConversationHeader
                 isMobileView={isMobileView}
                 onBack={onBack}
@@ -111,7 +111,7 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
                     <LoadingSkeleton type="message" count={4} />
                 ) : (
                     <ScrollArea className="h-full px-4">
-                        <div className="py-6 space-y-6 max-w-3xl mx-auto">
+                        <div className="py-6 space-y-8 max-w-3xl mx-auto">
                             {messages.map((m, index) => {
                                 const messageStatus = getMessageStatus(m);
                                 const messageDate = (m as any).createdAt;
@@ -129,15 +129,15 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
                                         <div className={cn("flex w-full items-end gap-2", m.role === 'user' ? "justify-end" : "justify-start")}>
                                             <div
                                                 className={cn(
-                                                    "max-w-[80%] p-3.5 px-5 text-[15px] leading-relaxed break-words shadow-sm transition-all duration-200 hover:shadow-md group",
+                                                    "max-w-[85%] p-4 px-6 text-[15px] leading-relaxed break-words shadow-lg transition-all duration-300 hover:shadow-xl group",
                                                     m.role === 'user'
-                                                        ? "bg-primary text-primary-foreground rounded-[20px] rounded-br-sm"
-                                                        : "bg-card border border-border/50 text-foreground rounded-[20px] rounded-bl-sm"
+                                                        ? "bg-gradient-to-br from-primary to-blue-600 text-white rounded-[24px] rounded-br-sm border border-white/10"
+                                                        : "glass text-foreground rounded-[24px] rounded-bl-sm"
                                                 )}
                                             >
                                                 {m.parts.map((part, index) =>
                                                     part.type === 'text' ? (
-                                                        <span key={index} className="whitespace-pre-wrap">
+                                                        <span key={index} className="whitespace-pre-wrap font-medium">
                                                             {part.text}
                                                         </span>
                                                     ) : null
@@ -146,8 +146,8 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
                                                 {/* Message metadata */}
                                                 {showTime && (
                                                     <div className={cn(
-                                                        "text-[10px] mt-1.5 flex items-center gap-1",
-                                                        m.role === 'user' ? "text-primary-foreground/70" : "text-muted-foreground"
+                                                        "text-[10px] mt-2 flex items-center gap-1 opacity-70",
+                                                        m.role === 'user' ? "text-white/80" : "text-muted-foreground"
                                                     )}>
                                                         {formatTimestamp(messageDate)}
                                                         {messageStatus && m.role === 'user' && (
@@ -163,15 +163,12 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
 
                                         {/* Tool usage indicator */}
                                         {m.parts.some(p => p.type.startsWith('tool-')) && (
-                                            <div className="mt-2 text-xs text-muted-foreground bg-muted/30 border border-border/50 p-2 rounded-lg max-w-[80%] ml-1">
+                                            <div className="mt-2 text-xs text-muted-foreground glass border border-white/5 p-2 px-3 rounded-lg max-w-[80%] ml-1 inline-flex items-center gap-2">
                                                 {m.parts.filter(p => p.type.startsWith('tool-')).map((part, index) => (
-                                                    <div key={index} className="flex gap-2 items-center py-1">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                                                        <span className="font-medium font-mono text-[10px] uppercase tracking-wider">
+                                                    <div key={index} className="flex gap-2 items-center">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                                        <span className="font-mono text-[10px] uppercase tracking-wider text-primary/80">
                                                             {part.type.replace('tool-', '')}
-                                                        </span>
-                                                        <span className="opacity-70">
-                                                            {'result' in part ? 'Completed' : 'Running...'}
                                                         </span>
                                                     </div>
                                                 ))}
@@ -194,7 +191,7 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
                 )}
             </div>
 
-            <div className="w-full bg-background/60 backdrop-blur-xl border-t border-border/40 pb-safe z-10">
+            <div className="w-full bg-background/0 backdrop-blur-none pb-safe z-10">
                 <div className="max-w-3xl mx-auto">
                     <MessageInput
                         onSendMessage={handleSendMessage}

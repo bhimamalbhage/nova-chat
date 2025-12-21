@@ -17,18 +17,18 @@ export function MessageInput({ onSendMessage, disabled }: MessageInputProps) {
     }
 
     return (
-        <div className="p-4 w-full">
-            <div className="relative flex items-center w-full">
+        <div className="p-4 px-6 w-full mb-4">
+            <div className="relative flex items-center w-full group">
                 <input
                     className={cn(
-                        "w-full bg-muted/50 border border-transparent rounded-[24px] px-5 pl-5 pr-14 py-3.5",
-                        "focus:outline-none focus:bg-background focus:border-border/50 focus:ring-2 focus:ring-primary/10 shadow-sm transition-all duration-200",
-                        "placeholder:text-muted-foreground/50 text-base"
+                        "w-full bg-card/40 backdrop-blur-xl border border-white/10 rounded-[28px] px-6 pl-6 pr-14 py-4",
+                        "focus:outline-none focus:bg-card/60 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 shadow-lg transition-all duration-300",
+                        "placeholder:text-muted-foreground/60 text-[15px] text-foreground"
                     )}
                     value={value}
                     onChange={e => setValue(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && !disabled && handleSend()}
-                    placeholder="Type a message to start..."
+                    placeholder="Ask anything..."
                     disabled={disabled}
                     autoComplete="off"
                 />
@@ -36,13 +36,13 @@ export function MessageInput({ onSendMessage, disabled }: MessageInputProps) {
                     onClick={handleSend}
                     disabled={!value.trim() || disabled}
                     className={cn(
-                        "absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full transition-all duration-200",
+                        "absolute right-2 top-1/2 -translate-y-1/2 p-2.5 rounded-full transition-all duration-300 scale-95 hover:scale-100 active:scale-95",
                         !value.trim() || disabled
-                            ? "bg-transparent text-muted-foreground/30 cursor-not-allowed"
-                            : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                            ? "bg-transparent text-muted-foreground/20 cursor-not-allowed"
+                            : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20"
                     )}
                 >
-                    <Icons.arrowUp className="h-5 w-5" strokeWidth={2.5} />
+                    <Icons.arrowUp className="h-5 w-5" strokeWidth={3} />
                 </button>
             </div>
         </div>

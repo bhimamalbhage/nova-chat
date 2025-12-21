@@ -50,12 +50,13 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
                         }
                     }
                 }}
-                placeholder="Search messages..."
+                placeholder="Search..."
                 className={cn(
-                    "w-full pl-9 pr-9 py-2 rounded-xl text-sm transition-all duration-200",
-                    "placeholder:text-muted-foreground/70",
-                    "focus:outline-none focus:ring-2 focus:ring-primary/10 focus:bg-background",
-                    "bg-muted/50 text-foreground border border-transparent focus:border-border/50"
+                    "w-full pl-9 pr-9 py-2 rounded-xl text-sm transition-all duration-300",
+                    "placeholder:text-muted-foreground/50",
+                    "bg-white/5 border border-white/5",
+                    "focus:outline-none focus:ring-1 focus:ring-primary/50 focus:bg-white/10 focus:border-primary/30",
+                    "hover:bg-white/10"
                 )}
             />
             {value && (

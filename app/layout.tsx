@@ -1,12 +1,12 @@
 import { Toaster } from "sonner";
 import { Toaster as CustomToaster } from "@/components/ui/toaster";
 import type { Metadata } from "next";
-import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google"; // Changed to Inter
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
-const sans = Space_Grotesk({
+const sans = Inter({ // Changed to Inter
   subsets: ["latin"],
   display: "swap",
   variable: "--font-sans",
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 const LIGHT_THEME_COLOR = "hsl(0 0% 100%)";
-const DARK_THEME_COLOR = "hsl(240deg 10% 3.92%)";
+const DARK_THEME_COLOR = "#020412"; // Deep space blue
 const THEME_COLOR_SCRIPT = `\
 (function() {
   var html = document.documentElement;
@@ -60,7 +60,7 @@ export default function RootLayout({
       <body className="antialiased">
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
+          defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >

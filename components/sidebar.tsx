@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { SearchBar } from "./search-bar";
 import { ConversationItem } from "./conversation-item";
 import { ScrollArea } from "./ui/scroll-area";
+import { ThemeToggle } from "./theme-toggle"; // Added import
 import { format, isToday, isYesterday, isThisWeek, parseISO } from "date-fns";
 import { useTheme } from "next-themes";
 
@@ -107,8 +108,8 @@ export function Sidebar({
     return (
         <div
             className={cn(
-                "flex flex-col h-full border-r border-border/40",
-                isMobileView ? "bg-background" : "bg-muted/30 backdrop-blur-xl"
+                "flex flex-col h-full border-r border-white/5",
+                isMobileView ? "bg-background" : "glass"
             )}
         >
             {children}
@@ -172,6 +173,12 @@ export function Sidebar({
                         </div>
                     </div>
                 </ScrollArea>
+            </div>
+            <div className="p-3 border-t border-white/5 flex justify-between items-center bg-black/10 backdrop-blur-sm">
+                <div className="text-xs text-muted-foreground/60 px-2">
+                    Nova Chat v0.1
+                </div>
+                <ThemeToggle />
             </div>
         </div>
     );

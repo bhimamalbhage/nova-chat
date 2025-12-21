@@ -129,14 +129,14 @@ export function ConversationItem({
                 .join(", ")}`}
             aria-current={isActive ? "true" : undefined}
             className={cn(
-                "w-full py-3 px-3 text-left relative flex items-center gap-3 transition-all duration-200 rounded-xl group",
+                "w-full py-3.5 px-4 text-left relative flex items-center gap-3 transition-all duration-300 rounded-xl group border border-transparent",
                 isActive
-                    ? "bg-accent/80 text-foreground shadow-sm ring-1 ring-border/50"
-                    : "hover:bg-accent/40 text-foreground/80 hover:text-foreground"
+                    ? "bg-primary/10 text-primary-foreground shadow-lg shadow-primary/5 border-primary/20 backdrop-blur-md"
+                    : "hover:bg-white/5 hover:border-white/5 text-muted-foreground hover:text-foreground"
             )}
         >
             {conversation.unreadCount > 0 && (
-                <div className="absolute left-1 w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 animate-pulse" />
+                <div className="absolute left-1.5 w-2 h-2 bg-primary rounded-full flex-shrink-0 animate-pulse box-shadow-glow" />
             )}
 
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-neutral-200 to-neutral-300 dark:from-neutral-700 dark:to-neutral-800 overflow-hidden flex-shrink-0 flex items-center justify-center shadow-inner">
