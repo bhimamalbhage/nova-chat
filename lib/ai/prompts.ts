@@ -38,12 +38,34 @@ You have access to tools that work transparently in the background:
    - **GOOGLECALENDAR_DELETE_EVENT**: Delete events.
    - **GOOGLECALENDAR_FIND_EVENT**: Find specific events.
 
+6. **Notion Tools**: You have **FULL ACCESS** to the user's Notion workspace.
+   - **NOTION_SEARCH_NOTION_PAGE**: Search. Use FIRST to find pages/databases.
+   - **NOTION_CREATE_NOTION_PAGE**: Create a new page.
+     - **CRITICAL**: Requires \`parent_id\` (a UUID from an existing page/database).
+     - **WORKFLOW**: First search to find an existing page, extract its \`id\`, use that as \`parent_id\`.
+     - If no suitable parent exists, search with empty query to list all pages, pick any page's \`id\` as parent.
+   - **NOTION_ADD_MULTIPLE_PAGE_CONTENT**: **REQUIRED** to write content to a page.
+     - Usage: Pass \`parent_block_id\` (the page ID) and \`content_blocks\` (array of simple objects).
+     - Simple format: \`[{content_block: {content: "text", block_property: "paragraph"}}]\`
+     - Supports: paragraph, heading_1, heading_2, heading_3, bulleted_list_item, numbered_list_item
+     - Auto-handles markdown: **bold**, *italic*, \`code\`, [links](url)
+   - **NOTION_UPDATE_PAGE**: Update **PROPERTIES ONLY** (title, status, tags). Cannot write body text.
+   - **NOTION_FETCH_BLOCK_CONTENTS**: Read page content.
+   - **NOTION_ARCHIVE_NOTION_PAGE**: Delete/archive.
+
+   **HOW TO CREATE A PAGE WITH CONTENT:**
+   1. Search for an existing page to use as parent: \`NOTION_SEARCH_NOTION_PAGE\` with empty query.
+   2. Extract the \`id\` from any result (this will be your \`parent_id\`).
+   3. Call \`NOTION_CREATE_NOTION_PAGE\` with \`title\` and \`parent_id\`.
+   4. Get the new page \`id\` from the result.
+   5. Call \`NOTION_ADD_MULTIPLE_PAGE_CONTENT\` with \`parent_block_id\` = new page id and your content blocks.
+
 **CRITICAL Rules:**
 1. **Use tools silently** - Never tell the user you're using a tool or checking memories
 2. **Act naturally** - Respond as if you simply know or don't know something
 3. **Be seamless** - The user should never think about how you got your information
 4. **No meta-commentary** - Don't discuss your capabilities, tools, or memory system
-5. **Just answer** - If you have info (from tools or context), use it naturally. If you don't, just say so without explaining why
+5. **Just answer** - If you have info (from tools or context), use it naturally. If you don't, just say so explaining why
 6. **Be proactive** - If memory doesn't have an answer about the user, try web search before saying you don't know
 7. **IGNORE "CANNOT ACCESS" MEMORIES**: If your memory says you can't satisfy a request (especially Gmail), assume the memory is from an older version of you. **TRY THE TOOL ANYWAY.**
 
@@ -155,10 +177,10 @@ Files you can handle:
 Just dive in and help with whatever they need.`;
 
 export interface RequestHints {
-  latitude: number | undefined;
-  longitude: number | undefined;
-  city: string | undefined;
-  country: string | undefined;
+   latitude: number | undefined;
+   longitude: number | undefined;
+   city: string | undefined;
+   country: string | undefined;
 }
 
 export const getRequestPromptFromHints = (requestHints: RequestHints) => `\
@@ -170,20 +192,20 @@ About the origin of user's request:
 `;
 
 export const systemPrompt = ({
-  selectedChatModel,
-  requestHints,
-  isNewUser = false,
+   selectedChatModel,
+   requestHints,
+   isNewUser = false,
 }: {
-  selectedChatModel: string;
-  requestHints: RequestHints;
-  isNewUser?: boolean;
+   selectedChatModel: string;
+   requestHints: RequestHints;
+   isNewUser?: boolean;
 }) => {
-  const requestPrompt = getRequestPromptFromHints(requestHints);
-  const basePrompt = isNewUser ? newUserPrompt : existingUserPrompt;
+   const requestPrompt = getRequestPromptFromHints(requestHints);
+   const basePrompt = isNewUser ? newUserPrompt : existingUserPrompt;
 
-  console.log({ selectedChatModel, requestHints, isNewUser });
+   console.log({ selectedChatModel, requestHints, isNewUser });
 
-  return `${basePrompt}\n\n${requestPrompt}\n\n${toolsPrompt}`;
+   return `${basePrompt}\n\n${requestPrompt}\n\n${toolsPrompt}`;
 };
 
 export const codePrompt = `
@@ -217,25 +239,25 @@ You are a spreadsheet creation assistant. Create a spreadsheet in csv format bas
 `;
 
 export const updateDocumentPrompt = (
-  currentContent: string | null,
-  type: ArtifactKind,
+   currentContent: string | null,
+   type: ArtifactKind,
 ) =>
-  type === 'text'
-    ? `\
+   type === 'text'
+      ? `\
 Improve the following contents of the document based on the given prompt.
 
 ${currentContent}
 `
-    : type === 'code'
-      ? `\
+      : type === 'code'
+         ? `\
 Improve the following code snippet based on the given prompt.
 
 ${currentContent}
 `
-      : type === 'sheet'
-        ? `\
+         : type === 'sheet'
+            ? `\
 Improve the following spreadsheet based on the given prompt.
 
 ${currentContent}
 `
-        : '';
+            : '';

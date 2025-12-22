@@ -13,16 +13,17 @@ export async function generateGmailConnectionLink(
 
     try {
         // Create a connected account link for the user
-        const connection = await composio.connectedAccounts.initiate({
-            integrationId: 'gmail', // or use the app name
-            entityId: externalUserId,
-            redirectUrl: redirectUrl || `${process.env.NEXT_PUBLIC_APP_URL}/settings`,
-        });
+        const connection = await composio.connectedAccounts.initiate(
+            externalUserId,
+            'gmail',
+            {
+                callbackUrl: redirectUrl || `${process.env.NEXT_PUBLIC_APP_URL}/settings`,
+            }
+        );
 
         return {
             success: true,
             connectionUrl: connection.redirectUrl,
-            connectionId: connection.connectionId,
         };
     } catch (error) {
         console.error('Error generating Gmail connection link:', error);
@@ -44,11 +45,11 @@ export async function checkGmailConnection(
 
     try {
         const connectedAccounts = await composio.connectedAccounts.list({
-            entityId: externalUserId,
+            userIds: [externalUserId],
         });
 
         const gmailAccount = connectedAccounts.items?.find(
-            (account) => account.appName?.toLowerCase() === 'gmail'
+            (account: any) => account.appName?.toLowerCase() === 'gmail' || account.providerId === 'GMAIL'
         );
 
         return {

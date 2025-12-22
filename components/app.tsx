@@ -62,6 +62,13 @@ export default function App() {
         setCurrentView("chat");
     };
 
+    useEffect(() => {
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.has("notion") || searchParams.has("gmail") || searchParams.has("google-calendar")) {
+            setCurrentView("integrations");
+        }
+    }, []);
+
     const handleLogout = async () => {
         try {
             const response = await fetch('/api/logout', {

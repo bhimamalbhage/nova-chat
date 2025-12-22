@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, Calendar, CheckCircle2, XCircle, Loader2, ExternalLink } from "lucide-react";
+import { Mail, Calendar, CheckCircle2, XCircle, Loader2, ExternalLink, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface IntegrationStatus {
@@ -29,11 +29,17 @@ export function IntegrationsSettings() {
     const [isDisconnectingGmail, setIsDisconnectingGmail] = useState(false);
     const [isDisconnectingCalendar, setIsDisconnectingCalendar] = useState(false);
 
+    const [notionStatus, setNotionStatus] = useState<IntegrationStatus | null>(null);
+    const [isLoadingNotion, setIsLoadingNotion] = useState(true);
+    const [isConnectingNotion, setIsConnectingNotion] = useState(false);
+    const [isDisconnectingNotion, setIsDisconnectingNotion] = useState(false);
+
     const { toast } = useToast();
 
     useEffect(() => {
         checkGmailStatus();
         checkCalendarStatus();
+        checkNotionStatus();
     }, []);
 
     const checkGmailStatus = async () => {
@@ -195,6 +201,83 @@ export function IntegrationsSettings() {
             });
         } finally {
             setIsDisconnectingCalendar(false);
+        }
+    };
+
+    const checkNotionStatus = async () => {
+        try {
+            setIsLoadingNotion(true);
+            const response = await fetch('/api/integrations/notion/status');
+            const data = await response.json();
+            setNotionStatus(data);
+        } catch (error) {
+            console.error('Failed to check Notion status:', error);
+        } finally {
+            setIsLoadingNotion(false);
+        }
+    };
+
+    const handleConnectNotion = async () => {
+        try {
+            setIsConnectingNotion(true);
+            const response = await fetch('/api/integrations/notion/connect', {
+                method: 'POST',
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.redirectUrl) {
+                window.location.href = data.redirectUrl;
+            } else {
+                toast({
+                    title: "Error",
+                    description: data.error || "Failed to initiate Notion connection",
+                    variant: "destructive",
+                });
+            }
+        } catch (error) {
+            console.error('Failed to connect Notion:', error);
+            toast({
+                title: "Error",
+                description: "Failed to initiate Notion connection",
+                variant: "destructive",
+            });
+        } finally {
+            setIsConnectingNotion(false);
+        }
+    };
+
+    const handleDisconnectNotion = async () => {
+        try {
+            setIsDisconnectingNotion(true);
+            const response = await fetch('/api/integrations/notion/disconnect', {
+                method: 'POST',
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                toast({
+                    title: "Success",
+                    description: "Notion account disconnected successfully",
+                });
+                await checkNotionStatus();
+            } else {
+                toast({
+                    title: "Error",
+                    description: data.error || "Failed to disconnect Notion",
+                    variant: "destructive",
+                });
+            }
+        } catch (error) {
+            console.error('Failed to disconnect Notion:', error);
+            toast({
+                title: "Error",
+                description: "Failed to disconnect Notion",
+                variant: "destructive",
+            });
+        } finally {
+            setIsDisconnectingNotion(false);
         }
     };
 
@@ -423,11 +506,114 @@ export function IntegrationsSettings() {
                 </CardContent>
             </Card>
 
+            {/* Notion Card */}
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-primary/10 rounded-lg">
+                                <FileText className="h-6 w-6 text-primary" />
+                            </div>
+                            <div>
+                                <CardTitle>Notion</CardTitle>
+                                <CardDescription>
+                                    Access and manage your workspace
+                                </CardDescription>
+                            </div>
+                        </div>
+                        {isLoadingNotion ? (
+                            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                        ) : notionStatus?.connected ? (
+                            <div className="flex items-center gap-2 text-green-600">
+                                <CheckCircle2 className="h-5 w-5" />
+                                <span className="text-sm font-medium">Connected</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                <XCircle className="h-5 w-5" />
+                                <span className="text-sm font-medium">Not Connected</span>
+                            </div>
+                        )}
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        <p className="text-sm text-muted-foreground">
+                            {notionStatus?.connected
+                                ? "Your Notion workspace is connected. The AI can now search, view, and create pages on your behalf."
+                                : "Connect your Notion workspace to enable the AI to access your notes and docs."}
+                        </p>
+
+                        {notionStatus?.connected ? (
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-4 flex-wrap">
+                                    <Button
+                                        variant="outline"
+                                        onClick={checkNotionStatus}
+                                        disabled={isLoadingNotion}
+                                    >
+                                        {isLoadingNotion ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Checking...
+                                            </>
+                                        ) : (
+                                            "Refresh Status"
+                                        )}
+                                    </Button>
+                                    <Button
+                                        variant="destructive"
+                                        onClick={handleDisconnectNotion}
+                                        disabled={isDisconnectingNotion}
+                                    >
+                                        {isDisconnectingNotion ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Disconnecting...
+                                            </>
+                                        ) : (
+                                            "Disconnect Notion"
+                                        )}
+                                    </Button>
+                                    <p className="text-xs text-muted-foreground">
+                                        Connected on {notionStatus.account?.createdAt ? new Date(notionStatus.account.createdAt).toLocaleDateString() : 'Unknown'}
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <Button
+                                onClick={handleConnectNotion}
+                                disabled={isConnectingNotion}
+                                className="gap-2"
+                            >
+                                {isConnectingNotion ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Connecting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <FileText className="h-4 w-4" />
+                                        Connect Notion
+                                        <ExternalLink className="h-3 w-3" />
+                                    </>
+                                )}
+                            </Button>
+                        )}
+                        {notionStatus?.error && (
+                            <p className="text-sm text-destructive">
+                                Error: {notionStatus.error}
+                            </p>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+
             <Card className="border-dashed">
                 <CardHeader>
                     <CardTitle className="text-base">More Integrations Coming Soon</CardTitle>
                     <CardDescription>
-                        We're working on adding more integrations like Slack, Notion, and more.
+                        We're working on adding more integrations.
                     </CardDescription>
                 </CardHeader>
             </Card>

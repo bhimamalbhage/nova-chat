@@ -28,7 +28,13 @@ export async function createComposioTools(apiKey: string, externalUserId: string
             "GOOGLECALENDAR_LIST_EVENTS",
             "GOOGLECALENDAR_UPDATE_EVENT",
             "GOOGLECALENDAR_DELETE_EVENT",
-            "GOOGLECALENDAR_FIND_EVENT"
+            "GOOGLECALENDAR_FIND_EVENT",
+            "NOTION_CREATE_NOTION_PAGE",
+            "NOTION_SEARCH_NOTION_PAGE",
+            "NOTION_FETCH_BLOCK_CONTENTS",
+            "NOTION_ADD_MULTIPLE_PAGE_CONTENT",
+            "NOTION_UPDATE_PAGE",
+            "NOTION_ARCHIVE_NOTION_PAGE"
         ];
 
         for (const toolName of additionalTools) {
@@ -52,7 +58,10 @@ export async function createComposioTools(apiKey: string, externalUserId: string
                 console.log(`[Composio Debug] 🚀 Executing tool ${toolName}`);
                 console.log(`[Composio Debug] Args:`, JSON.stringify(args[0], null, 2));
                 try {
-                    const result = await originalExecute(...args);
+                    if (!originalExecute) {
+                        throw new Error(`Tool ${toolName} has no execute function`);
+                    }
+                    const result = await (originalExecute as any)(...args);
                     console.log(`[Composio Debug] ✅ Tool ${toolName} success`);
                     // Log partial result to avoid spamming console
                     const resultStr = JSON.stringify(result, null, 2);
