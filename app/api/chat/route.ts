@@ -212,33 +212,52 @@ export async function POST(request: Request) {
                 }
             },
             onFinish: async ({ text }) => {
-                if (!text) return;
+                const responseText = text || '';
+                console.log(`[onFinish] Text length: ${responseText.length}`);
 
-                // Save assistant message
-                await saveMessages({
-                    messages: [
-                        {
-                            id: generateUUID(),
-                            chatId: id,
-                            role: 'assistant',
-                            parts: [{ type: 'text', text }],
-                            attachments: [],
-                            createdAt: new Date(),
-                        },
-                    ],
-                });
+                // Save assistant message only if there is text
+                if (responseText) {
+                    try {
+                        await saveMessages({
+                            messages: [
+                                {
+                                    id: generateUUID(),
+                                    chatId: id,
+                                    role: 'assistant',
+                                    parts: [{ type: 'text', text: responseText }],
+                                    attachments: [],
+                                    createdAt: new Date(),
+                                },
+                            ],
+                        });
+                    } catch (error) {
+                        console.error('[onFinish] Error saving assistant message:', error);
+                    }
+                }
+
+                console.log(`[onFinish] Previous messages count: ${previousMessages.length}`);
 
                 // Generate title for new chats
                 if (previousMessages.length === 0) {
+                    console.log('[onFinish] Generating title for new chat...');
                     try {
+                        const titleSystemPrompt = 'You are a helpful assistant. Generate a short, concise, and descriptive title (max 5 words) for the following chat conversation. Do not use quotes or special characters. strictly return the title only.';
+                        // Fallback to user message if assistant response is empty
+                        const titleUserPrompt = responseText
+                            ? `User: ${currentMessageContent}\nAssistant: ${responseText}`
+                            : `Generate a title for this user query: ${currentMessageContent}`;
+
                         const { text: title } = await generateText({
                             model: myProvider,
-                            system: 'You are a helpful assistant. Generate a short, concise, and descriptive title (max 5 words) for the following chat conversation. Do not use quotes or special characters. strictly return the title only.',
-                            prompt: `User: ${currentMessageContent}\nAssistant: ${text}`,
+                            system: titleSystemPrompt,
+                            prompt: titleUserPrompt,
                         });
+
+                        console.log(`[onFinish] Generated title: "${title}"`);
 
                         if (title) {
                             await updateChatTitle({ id, title: title.trim() });
+                            console.log('[onFinish] Title updated in DB');
                         }
                     } catch (error) {
                         console.error('Error generating chat title:', error);
