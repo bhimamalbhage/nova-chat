@@ -25,7 +25,7 @@ export async function createComposioTools(apiKey: string, externalUserId: string
             "GMAIL_REPLY_TO_THREAD",
             "GMAIL_CREATE_EMAIL_DRAFT",
             "GOOGLECALENDAR_CREATE_EVENT",
-            "GOOGLECALENDAR_LIST_EVENTS",
+            "GOOGLECALENDAR_EVENTS_LIST",
             "GOOGLECALENDAR_UPDATE_EVENT",
             "GOOGLECALENDAR_DELETE_EVENT",
             "GOOGLECALENDAR_FIND_EVENT",

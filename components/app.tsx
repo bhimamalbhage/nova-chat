@@ -30,6 +30,7 @@ export default function App() {
 
     const { data: history, error, mutate: mutateHistory, isLoading } = useSWR<any[]>('/api/history', fetcher, {
         fallbackData: [],
+        refreshInterval: 5000, // Poll every 5 seconds to ensure new chats appear
     });
 
     const conversations: Conversation[] = history?.map(chat => ({
@@ -150,73 +151,7 @@ export default function App() {
                     "flex-shrink-0 relative z-20 flex flex-col",
                     isMobileView ? "w-full" : "w-[320px] max-w-[320px]"
                 )}>
-                    {/* Fixed Header - Always Visible */}
-                    <div className={cn(
-                        "border-r border-border/40",
-                        isMobileView ? "bg-background" : "bg-muted/30 backdrop-blur-xl"
-                    )}>
-                        {/* Enhanced Navigation Header */}
-                        <div className="p-3 space-y-1 border-b border-border/40">
-                            <div className="flex items-center gap-2 px-2 py-3 mb-2">
-                                <div className="p-2 bg-primary/10 rounded-lg">
-                                    <Sparkles className="h-5 w-5 text-primary" strokeWidth={2} />
-                                </div>
-                                <div className="flex-1">
-                                    <h2 className="font-semibold text-sm tracking-tight">Nova Chat</h2>
-                                </div>
-                                <ThemeToggle />
-                            </div>
-
-                            <Button
-                                variant={activeConversationId && !conversations.find(c => c.id === activeConversationId) ? "secondary" : "default"}
-                                className="w-full justify-start gap-2 shadow-sm"
-                                onClick={handleNewChat}
-                            >
-                                <MessageSquarePlus className="h-4 w-4" />
-                                New Chat
-                            </Button>
-                        </div>
-
-                        {/* Navigation Buttons */}
-                        <div className="p-3 space-y-1 border-b border-border/40">
-                            <Button
-                                variant={currentView === "profile" ? "secondary" : "ghost"}
-                                className="w-full justify-start gap-2"
-                                onClick={() => {
-                                    setCurrentView("profile");
-                                    setActiveConversationId(null);
-                                }}
-                            >
-                                <User className="h-4 w-4" />
-                                Memory Profile
-                            </Button>
-                            <Button
-                                variant={currentView === "integrations" ? "secondary" : "ghost"}
-                                className="w-full justify-start gap-2"
-                                onClick={() => {
-                                    setCurrentView("integrations");
-                                    setActiveConversationId(null);
-                                }}
-                            >
-                                <Settings className="h-4 w-4" />
-                                Integrations
-                            </Button>
-                        </div>
-
-                        {/* Logout at bottom of fixed header */}
-                        <div className="p-3 border-b border-border/40">
-                            <Button
-                                variant="ghost"
-                                className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                onClick={handleLogout}
-                            >
-                                <LogOut className="h-4 w-4" />
-                                Logout
-                            </Button>
-                        </div>
-                    </div>
-
-                    {/* Scrollable Sidebar Content */}
+                    {/* Main Sidebar Component with Header as Children */}
                     <Sidebar
                         conversations={conversations}
                         activeConversation={activeConversationId}
@@ -229,7 +164,73 @@ export default function App() {
                         isMobileView={isMobileView}
                         searchTerm={searchTerm}
                         onSearchChange={setSearchTerm}
-                    />
+                    >
+                        {/* Fixed Header Content moved inside Sidebar */}
+                        <div className={cn(
+                            "border-b border-border/40", // Removed border-r since Sidebar handles it. Changed to border-b.
+                            isMobileView ? "bg-background" : "bg-muted/30 backdrop-blur-xl"
+                        )}>
+                            {/* Enhanced Navigation Header */}
+                            <div className="p-3 space-y-1">
+                                <div className="flex items-center gap-2 px-2 py-3 mb-2">
+                                    <div className="p-2 bg-primary/10 rounded-lg">
+                                        <Sparkles className="h-5 w-5 text-primary" strokeWidth={2} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h2 className="font-semibold text-sm tracking-tight">Nova Chat</h2>
+                                    </div>
+                                    <ThemeToggle />
+                                </div>
+
+                                <Button
+                                    variant={activeConversationId && !conversations.find(c => c.id === activeConversationId) ? "secondary" : "default"}
+                                    className="w-full justify-start gap-2 shadow-sm"
+                                    onClick={handleNewChat}
+                                >
+                                    <MessageSquarePlus className="h-4 w-4" />
+                                    New Chat
+                                </Button>
+                            </div>
+
+                            {/* Navigation Buttons */}
+                            <div className="p-3 space-y-1 border-t border-border/40">
+                                <Button
+                                    variant={currentView === "profile" ? "secondary" : "ghost"}
+                                    className="w-full justify-start gap-2"
+                                    onClick={() => {
+                                        setCurrentView("profile");
+                                        setActiveConversationId(null);
+                                    }}
+                                >
+                                    <User className="h-4 w-4" />
+                                    Memory Profile
+                                </Button>
+                                <Button
+                                    variant={currentView === "integrations" ? "secondary" : "ghost"}
+                                    className="w-full justify-start gap-2"
+                                    onClick={() => {
+                                        setCurrentView("integrations");
+                                        setActiveConversationId(null);
+                                    }}
+                                >
+                                    <Settings className="h-4 w-4" />
+                                    Integrations
+                                </Button>
+                            </div>
+
+                            {/* Logout at bottom of fixed header section */}
+                            <div className="p-3 border-t border-border/40">
+                                <Button
+                                    variant="ghost"
+                                    className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    onClick={handleLogout}
+                                >
+                                    <LogOut className="h-4 w-4" />
+                                    Logout
+                                </Button>
+                            </div>
+                        </div>
+                    </Sidebar>
                 </div>
             )}
 

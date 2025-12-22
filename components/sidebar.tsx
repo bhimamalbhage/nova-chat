@@ -178,7 +178,6 @@ export function Sidebar({
                 <div className="text-xs text-muted-foreground/60 px-2">
                     Nova Chat v0.1
                 </div>
-                <ThemeToggle />
             </div>
         </div>
     );
