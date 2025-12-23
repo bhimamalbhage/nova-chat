@@ -1,21 +1,47 @@
 import { WebClient } from '@slack/web-api';
 
-const token = process.env.SLACK_BOT_TOKEN;
+// Token is optional here, can be passed per request
+const defaultToken = process.env.SLACK_BOT_TOKEN;
 
-if (!token) {
-    console.warn('[Slack] SLACK_BOT_TOKEN not set. Slack client will not work.');
-}
+export async function sendMessage(channel: string, text: string, token?: string) {
+    if (!text || text.trim() === '') {
+        console.warn('[Slack] Attempted to send empty message. Skipping.');
+        return;
+    }
 
-export const slackClient = new WebClient(token);
+    const authToken = token || defaultToken;
+    if (!authToken) {
+        console.error('[Slack] No token provided for sendMessage');
+        return;
+    }
 
-export async function sendMessage(channel: string, text: string) {
+    const client = new WebClient(authToken);
+
     try {
-        await slackClient.chat.postMessage({
+        const result = await client.chat.postMessage({
             channel,
             text,
         });
+        return result.ts;
     } catch (error) {
         console.error('[Slack] Error sending message:', error);
-        throw error;
+        return undefined;
+    }
+}
+
+export async function updateMessage(channel: string, text: string, ts: string, token?: string) {
+    const authToken = token || defaultToken;
+    if (!authToken) return;
+
+    const client = new WebClient(authToken);
+
+    try {
+        await client.chat.update({
+            channel,
+            ts,
+            text,
+        });
+    } catch (error) {
+        console.error('[Slack] Error updating message:', error);
     }
 }

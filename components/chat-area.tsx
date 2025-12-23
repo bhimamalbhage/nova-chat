@@ -179,7 +179,7 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
                             })}
 
                             {/* Typing indicator */}
-                            {status === 'streaming' && (
+                            {(status === 'streaming' || status === 'submitted') && (
                                 <div className="flex justify-start animate-in fade-in duration-300">
                                     <TypingIndicator />
                                 </div>

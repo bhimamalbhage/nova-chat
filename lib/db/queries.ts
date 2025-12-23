@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { generateChatId } from '@/lib/utils';
 import { nanoid } from 'nanoid';
 
@@ -22,8 +23,8 @@ export interface DBMessage {
     createdAt: Date;
 }
 
-export async function getChatById({ id }: { id: string }): Promise<Chat | null> {
-    const supabase = await createClient();
+export async function getChatById({ id, client }: { id: string; client?: SupabaseClient }): Promise<Chat | null> {
+    const supabase = client || await createClient();
     const { data, error } = await supabase
         .from('chats')
         .select('*')
@@ -48,13 +49,15 @@ export async function saveChat({
     userId,
     title,
     visibility,
+    client,
 }: {
     id: string;
     userId: string;
     title: string;
     visibility: VisibilityType;
+    client?: SupabaseClient;
 }) {
-    const supabase = await createClient();
+    const supabase = client || await createClient();
     const { error } = await supabase.from('chats').insert({
         id,
         user_id: userId,
@@ -69,8 +72,8 @@ export async function saveChat({
     }
 }
 
-export async function getMessagesByChatId({ id }: { id: string }): Promise<DBMessage[]> {
-    const supabase = await createClient();
+export async function getMessagesByChatId({ id, client }: { id: string; client?: SupabaseClient }): Promise<DBMessage[]> {
+    const supabase = client || await createClient();
     const { data, error } = await supabase
         .from('messages')
         .select('*')
@@ -102,8 +105,8 @@ export async function getMessagesByChatId({ id }: { id: string }): Promise<DBMes
     });
 }
 
-export async function saveMessages({ messages }: { messages: DBMessage[] }) {
-    const supabase = await createClient();
+export async function saveMessages({ messages, client }: { messages: DBMessage[]; client?: SupabaseClient }) {
+    const supabase = client || await createClient();
     const { error } = await supabase.from('messages').insert(
         messages.map((msg) => ({
             id: msg.id,

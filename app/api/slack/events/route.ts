@@ -1,67 +1,69 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySlackRequest } from '@/lib/slack/verify';
 import { sendMessage } from '@/lib/slack/client';
 import { generateSlackResponse } from '@/lib/slack/ai-handler';
 
 export async function POST(req: NextRequest) {
     try {
         const body = await req.text();
-        const signature = req.headers.get('x-slack-signature');
-
-        console.log('[Slack] Received event:', body.substring(0, 100));
-
-        // 1. Verify Request (DISABLED FOR DEBUGGING)
-        /*
-        if (process.env.SLACK_SIGNING_SECRET) {
-             const isValid = verifySlackRequest(req, body, process.env.SLACK_SIGNING_SECRET);
-             if (!isValid) {
-                 console.error('[Slack] Invalid signature');
-                 return new NextResponse('Invalid signature', { status: 400 });
-             }
-        } else {
-             console.warn('[Slack] SLACK_SIGNING_SECRET not set. Skipping verification.');
-        }
-        */
+        // Signature verification disabled for dev loop
 
         const payload = JSON.parse(body);
 
-        // 2. Handle URL Verification (Challenge)
         if (payload.type === 'url_verification') {
-            console.log('[Slack] Handling verification challenge');
-            return new NextResponse(payload.challenge, {
-                status: 200,
-                headers: { 'Content-Type': 'text/plain' },
-            });
+            return new NextResponse(payload.challenge, { status: 200, headers: { 'Content-Type': 'text/plain' } });
         }
 
-        // 3. Handle Events (e.g. app_mention, message)
         if (payload.event) {
-            console.log('[Slack] Event Type:', payload.event.type);
-            console.log('[Slack] Event:', JSON.stringify(payload.event, null, 2));
-
-            // Ignore bot messages to prevent loops
+            // Ignore bot messages
             if (payload.event.bot_id || payload.event.subtype === 'bot_message') {
-                console.log('[Slack] Ignoring bot message');
                 return new NextResponse('OK', { status: 200 });
             }
 
-            // Handle DMs and mentions
-            if (payload.event.type === 'message' || payload.event.type === 'app_mention') {
+            const eventType = payload.event.type;
+            const channelType = payload.event.channel_type;
+
+            // Handle App Mentions and DMs
+            if (eventType === 'app_mention' || (eventType === 'message' && channelType === 'im')) {
                 const userMessage = payload.event.text;
                 const channel = payload.event.channel;
+                const user = payload.event.user; // Slack User ID
+                const teamId = payload.team_id; // Slack Team ID
 
-                console.log('[Slack] User message:', userMessage);
-                console.log('[Slack] Channel:', channel);
+                console.log(`[Slack] Processing ${eventType} (${channelType}) from ${user} in ${channel}`);
 
-                // Respond with 200 OK immediately (Slack requires response within 3s)
-                // Process AI response asynchronously
+                // Async response
                 setImmediate(async () => {
                     try {
-                        const aiResponse = await generateSlackResponse(userMessage);
-                        await sendMessage(channel, aiResponse);
-                        console.log('[Slack] Sent AI response');
+                        // Resolve Token
+                        const { getSlackAccessToken } = await import('@/lib/db/slack-installations');
+                        const token = await getSlackAccessToken(teamId);
+
+                        // Send "Thinking..." indicator
+                        const { updateMessage } = await import('@/lib/slack/client');
+                        const thinkingTs = await sendMessage(channel, "Let me think...", token || undefined);
+
+                        if (!thinkingTs) {
+                            // Fallback if we couldn't send thinking message (rare)
+                            const aiResponse = await generateSlackResponse(userMessage, user, channel);
+                            await sendMessage(channel, aiResponse, token || undefined);
+                            return;
+                        }
+
+                        try {
+                            // Pass User ID to handler
+                            const aiResponse = await generateSlackResponse(userMessage, user, channel);
+
+                            // Update the "Thinking..." message with valid response
+                            await updateMessage(channel, aiResponse, thinkingTs, token || undefined);
+                        } catch (err: any) {
+                            console.error('[Slack] Error generating response:', err);
+                            // Update thinking message with error
+                            await updateMessage(channel, "I had a hiccup processing that request.", thinkingTs, token || undefined);
+                        }
                     } catch (error) {
                         console.error('[Slack] Error in async handler:', error);
+                        // Make sure to send a fresh message if we couldn't update (or if outer catch caught something before thinkingTs)
+                        await sendMessage(channel, "I had a hiccup processing that.");
                     }
                 });
 
