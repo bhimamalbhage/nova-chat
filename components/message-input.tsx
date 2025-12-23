@@ -1,20 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Icons } from "./icons";
 import { cn } from "@/lib/utils";
 
 interface MessageInputProps {
+    value?: string; // optional controlled input
+    onChange?: (value: string) => void; // for controlled input
     onSendMessage: (text: string) => void;
+    onTyping?: (text: string) => void;
     disabled?: boolean;
 }
 
-export function MessageInput({ onSendMessage, disabled }: MessageInputProps) {
-    const [value, setValue] = useState("");
+export function MessageInput({
+    value: controlledValue,
+    onChange,
+    onSendMessage,
+    onTyping,
+    disabled
+}: MessageInputProps) {
+    const [internalValue, setInternalValue] = useState("");
+
+    // Determine whether we are using controlled or internal state
+    const value = controlledValue ?? internalValue;
+    const setValue = onChange ?? setInternalValue;
 
     const handleSend = () => {
         if (!value.trim()) return;
         onSendMessage(value);
         setValue("");
-    }
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setValue(e.target.value);
+        onTyping?.(e.target.value);
+    };
+
+    // Optional: trigger typing for initial value on mount
+    useEffect(() => {
+        if (value && onTyping) onTyping(value);
+    }, []);
 
     return (
         <div className="p-4 px-6 w-full mb-4">
@@ -26,7 +49,7 @@ export function MessageInput({ onSendMessage, disabled }: MessageInputProps) {
                         "placeholder:text-muted-foreground/60 text-[15px] text-foreground"
                     )}
                     value={value}
-                    onChange={e => setValue(e.target.value)}
+                    onChange={handleChange}
                     onKeyDown={e => e.key === 'Enter' && !disabled && handleSend()}
                     placeholder="Ask anything..."
                     disabled={disabled}
@@ -46,5 +69,5 @@ export function MessageInput({ onSendMessage, disabled }: MessageInputProps) {
                 </button>
             </div>
         </div>
-    )
+    );
 }

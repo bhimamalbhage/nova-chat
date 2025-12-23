@@ -10,8 +10,9 @@ import { cn, generateUUID } from '@/lib/utils';
 import { useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
-import { Check, CheckCheck, Clock } from 'lucide-react';
+import { CheckCheck } from 'lucide-react';
+
+import { TurnManager } from '@/lib/utils/turn-manager';
 
 interface ChatAreaProps {
     chatId: string;
@@ -20,33 +21,77 @@ interface ChatAreaProps {
     onNewMessage?: () => void;
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAreaProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [showTimestamps, setShowTimestamps] = useState(false);
+    const [inputValue, setInputValue] = useState("");
 
-    const { messages, sendMessage, status, setMessages } = useChat({
+    // Initialize TurnManager with abandoned typing callback
+    const turnManager = useRef(new TurnManager(() => setInputValue("")));
+
+    const chatHelpers = useChat({
         id: chatId,
         generateId: generateUUID,
-        transport: new DefaultChatTransport({
-            api: '/api/chat',
-            body: {
-                id: chatId,
-                selectedChatModel: 'chat-model',
-                selectedVisibilityType: 'private',
-            },
-        }),
+        body: {
+            id: chatId,
+            selectedChatModel: 'chat-model',
+            selectedVisibilityType: 'private',
+        },
         onFinish: () => {
-            if (onNewMessage && messages.length === 0) {
-                onNewMessage();
-            }
+            if (onNewMessage && messages.length === 0) onNewMessage();
         },
     });
 
+    const { messages, sendMessage, status, setMessages, stop } = chatHelpers;
+
     const handleSendMessage = (text: string) => {
         if (!text.trim()) return;
-        sendMessage({ text });
+
+        // Track typing for TurnManager
+        turnManager.current.addMessage(text);
+
+        // Merge if needed
+        if (turnManager.current.shouldMerge()) {
+            const lastUserIndex = messages.findLastIndex(m => m.role === 'user');
+
+            if (lastUserIndex !== -1) {
+                stop(); // cancel AI response
+
+                const lastUserMsg = messages[lastUserIndex];
+                const lastContent = lastUserMsg.parts
+                    ? lastUserMsg.parts
+                        .filter(p => p.type === 'text')
+                        .map(p => (p as any).text)
+                        .join("\n")
+                    : lastUserMsg.content;
+
+                const mergedText = (lastContent || '') + "\n" + turnManager.current.getMergedMessage();
+
+                const keptMessages = messages.slice(0, lastUserIndex);
+                setMessages(keptMessages);
+
+                turnManager.current.onSend();
+
+                // Re-send with merged content using sendMessage
+                setTimeout(() => sendMessage({
+                    role: 'user',
+                    content: mergedText
+                } as any), 50);
+
+                setInputValue(""); // clear input after sending
+                return;
+            }
+        }
+
+        // Normal send using sendMessage
+        turnManager.current.onSend();
+        sendMessage({
+            role: 'user',
+            content: text
+        } as any);
+        setInputValue("");
     };
 
     const { data: initialMessages, isLoading: isLoadingMessages } = useSWR(
@@ -54,7 +99,7 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
         fetcher
     );
 
-    // Populate initial messages when fetched
+    // Populate initial messages
     useEffect(() => {
         if (initialMessages && messages.length === 0) {
             setMessages(initialMessages.map((m: any) => ({
@@ -66,40 +111,33 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
         }
     }, [initialMessages, setMessages, messages.length]);
 
-    // Auto-scroll to bottom on new messages
+    // Auto-scroll
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [messages, status]);
 
-    // Create a pseudo-Conversation object for compatibility with Header
     const activeConversation: any = {
         id: chatId,
         name: 'Chat',
         recipients: [],
         messages: [],
         lastMessageTime: new Date().toISOString(),
-        unreadCount: 0
+        unreadCount: 0,
     };
 
-    const getMessageStatus = (message: any) => {
-        if (message.role !== 'user') return null;
+    const getMessageStatus = (message: any) => (message.role === 'user' ? 'sent' : null);
 
-        // Simple status logic - in production, this would come from the message metadata
-        return 'sent'; // Could be 'sending', 'sent', 'error'
-    };
-
-    const formatTimestamp = (date: Date) => {
-        return new Intl.DateTimeFormat('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true
-        }).format(date);
-    };
+    const formatTimestamp = (date: Date) => new Intl.DateTimeFormat('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    }).format(date);
 
     return (
         <div className="flex flex-col h-full bg-transparent relative w-full">
+
             <ConversationHeader
                 isMobileView={isMobileView}
                 onBack={onBack}
@@ -135,15 +173,12 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
                                                         : "glass text-foreground rounded-[24px] rounded-bl-sm"
                                                 )}
                                             >
-                                                {m.parts.map((part, index) =>
+                                                {(m.parts || (m.content ? [{ type: 'text', text: m.content }] : [])).map((part: any, index: number) =>
                                                     part.type === 'text' ? (
-                                                        <span key={index} className="whitespace-pre-wrap font-medium">
-                                                            {part.text}
-                                                        </span>
+                                                        <span key={index} className="whitespace-pre-wrap font-medium">{part.text}</span>
                                                     ) : null
                                                 )}
 
-                                                {/* Message metadata */}
                                                 {showTime && (
                                                     <div className={cn(
                                                         "text-[10px] mt-2 flex items-center gap-1 opacity-70",
@@ -161,10 +196,9 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
                                             </div>
                                         </div>
 
-                                        {/* Tool usage indicator */}
-                                        {m.parts.some(p => p.type.startsWith('tool-')) && (
+                                        {(m.parts || []).some((p: any) => p.type?.startsWith('tool-')) && (
                                             <div className="mt-2 text-xs text-muted-foreground glass border border-white/5 p-2 px-3 rounded-lg max-w-[80%] ml-1 inline-flex items-center gap-2">
-                                                {m.parts.filter(p => p.type.startsWith('tool-')).map((part, index) => (
+                                                {(m.parts || []).filter((p: any) => p.type?.startsWith('tool-')).map((part: any, index: number) => (
                                                     <div key={index} className="flex gap-2 items-center">
                                                         <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                                                         <span className="font-mono text-[10px] uppercase tracking-wider text-primary/80">
@@ -178,7 +212,6 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
                                 );
                             })}
 
-                            {/* Typing indicator */}
                             {(status === 'streaming' || status === 'submitted') && (
                                 <div className="flex justify-start animate-in fade-in duration-300">
                                     <TypingIndicator />
@@ -194,11 +227,13 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
             <div className="w-full bg-background/0 backdrop-blur-none pb-safe z-10">
                 <div className="max-w-3xl mx-auto">
                     <MessageInput
+                        value={inputValue}
+                        onChange={setInputValue}
                         onSendMessage={handleSendMessage}
-                        disabled={status === 'streaming' || status === 'submitted'}
+                        onTyping={() => turnManager.current.onTyping()}
                     />
                 </div>
             </div>
         </div>
-    )
+    );
 }

@@ -79,7 +79,7 @@ export async function POST(request: Request) {
             const parts =
                 Array.isArray(lastMessage.parts) && lastMessage.parts.length > 0
                     ? lastMessage.parts
-                    : [{ type: 'text', text: '' }];
+                    : [{ type: 'text', text: lastMessage.content || '' }];
 
             const contentString = parts
                 .filter((p: any) => p.type === 'text')
