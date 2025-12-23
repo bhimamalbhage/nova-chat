@@ -3,6 +3,8 @@ import { sendMessage } from '@/lib/slack/client';
 import { generateSlackResponse } from '@/lib/slack/ai-handler';
 import { verifySlackRequest } from '@/lib/slack/verify';
 
+export const maxDuration = 30; // Increase timeout to 30s for AI
+
 export async function POST(req: NextRequest) {
     try {
         const body = await req.text();
@@ -42,8 +44,10 @@ export async function POST(req: NextRequest) {
                 const handleAsync = async () => {
                     try {
                         // Resolve Token
+                        console.log(`[Slack] Resolving token for team ${teamId}`);
                         const { getSlackAccessToken } = await import('@/lib/db/slack-installations');
                         const token = await getSlackAccessToken(teamId);
+                        console.log(`[Slack] Token found: ${!!token}`);
 
                         // Send "Thinking..." indicator
                         const { updateMessage } = await import('@/lib/slack/client');
