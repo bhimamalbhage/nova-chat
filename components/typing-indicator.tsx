@@ -8,7 +8,7 @@ export function TypingIndicator() {
             {[0, 1, 2].map((i) => (
                 <motion.div
                     key={i}
-                    className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-primary to-purple-500 shadow-[0_0_10px_rgba(var(--primary),0.5)]"
+                    className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-primary to-blue-400 shadow-[0_0_10px_rgba(0,212,255,0.5)]"
                     animate={{
                         y: [0, -8, 0],
                         opacity: [0.4, 1, 0.4],

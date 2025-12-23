@@ -190,7 +190,7 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
                                                         )}
                                                     >
                                                         {m.role === 'assistant' && chunkIndex === 0 && (
-                                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-lg border border-white/10 shrink-0">
+                                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-blue-500 flex items-center justify-center shadow-lg border border-primary/20 shrink-0">
                                                                 <Sparkles className="w-4 h-4 text-white" />
                                                             </div>
                                                         )}
@@ -198,7 +198,7 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
                                                             className={cn(
                                                                 "max-w-[85%] p-4 px-6 text-[15px] leading-relaxed break-words shadow-lg transition-all duration-300 hover:shadow-xl group backdrop-blur-md",
                                                                 m.role === 'user'
-                                                                    ? "bg-gradient-to-br from-primary to-purple-600 text-white rounded-[24px] rounded-br-sm border border-white/10"
+                                                                    ? "bg-gradient-to-br from-primary to-blue-500 text-primary-foreground rounded-[24px] rounded-br-sm border border-primary/20"
                                                                     : "bg-white/5 border border-white/10 text-foreground rounded-[24px] rounded-bl-sm"
                                                             )}
                                                         >

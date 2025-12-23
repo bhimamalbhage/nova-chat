@@ -45,7 +45,7 @@ export function MessageInput({
             {/* Glow effect behind input */}
             <div
                 className={cn(
-                    "absolute -inset-0.5 bg-gradient-to-r from-primary via-purple-500 to-blue-500 rounded-[30px] opacity-0 blur transition duration-500 group-hover:opacity-30",
+                    "absolute -inset-0.5 bg-gradient-to-r from-primary via-cyan-400 to-blue-500 rounded-[30px] opacity-0 blur transition duration-500 group-hover:opacity-30",
                     isFocused && "opacity-50 duration-200"
                 )}
             />
@@ -53,10 +53,10 @@ export function MessageInput({
             <div className="relative flex items-center w-full">
                 <input
                     className={cn(
-                        "w-full bg-[#050511]/80 backdrop-blur-2xl border border-white/10 rounded-[28px] px-6 pl-6 pr-14 py-4",
-                        "focus:outline-none focus:bg-[#050511] transition-all duration-300",
+                        "w-full bg-card/80 backdrop-blur-2xl border border-primary/10 rounded-[28px] px-6 pl-6 pr-14 py-4",
+                        "focus:outline-none focus:bg-card transition-all duration-300",
                         "placeholder:text-muted-foreground/50 text-[15px] text-foreground leading-relaxed",
-                        isFocused && "shadow-2xl ring-1 ring-white/10"
+                        isFocused && "shadow-2xl ring-1 ring-primary/20"
                     )}
                     value={value}
                     onChange={handleChange}
@@ -74,7 +74,7 @@ export function MessageInput({
                         "absolute right-2 top-1/2 -translate-y-1/2 p-2.5 rounded-full transition-all duration-300 scale-95 hover:scale-100 active:scale-95",
                         !value.trim() || disabled
                             ? "bg-transparent text-muted-foreground/20 cursor-not-allowed"
-                            : "bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg shadow-primary/25 hover:shadow-primary/40"
+                            : "bg-gradient-to-br from-primary to-blue-500 text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-primary/40"
                     )}
                 >
                     <Icons.arrowUp className="h-5 w-5" strokeWidth={3} />
