@@ -267,7 +267,7 @@ export function MemoryGraphView({ isActive = true, isMobileView = false }: Memor
                     </div>
                 )}
                 <MemoryGraph
-                    documents={documents}
+                    documents={documents as any}
                     isLoading={isLoading}
                     isLoadingMore={isLoadingMore}
                     error={error}
