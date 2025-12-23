@@ -8,13 +8,13 @@ import {
 	useMemo,
 	useRef,
 } from "react"
-import { colors } from "@/constants"
+import { colors } from "../constants"
 import type {
 	DocumentWithMemories,
 	GraphCanvasProps,
 	GraphNode,
 	MemoryEntry,
-} from "@/types"
+} from "../types"
 import { canvasWrapper } from "./canvas-common.css"
 
 export const GraphCanvas = memo<GraphCanvasProps>(

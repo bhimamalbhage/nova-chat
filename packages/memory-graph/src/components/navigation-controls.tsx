@@ -7,7 +7,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "../ui/tooltip"
-import type { GraphNode } from "@/types"
+import type { GraphNode } from "../types"
 import {
 	navContainer,
 	navButton,

@@ -1,8 +1,8 @@
 "use client"
 
 import { useCallback, useRef, useState } from "react"
-import { GRAPH_SETTINGS } from "@/constants"
-import type { GraphNode } from "@/types"
+import { GRAPH_SETTINGS } from "../constants"
+import type { GraphNode } from "../types"
 
 export function useGraphInteractions(
 	variant: "console" | "consumer" = "console",

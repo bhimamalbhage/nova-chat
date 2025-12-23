@@ -1,9 +1,9 @@
 "use client"
 
-import { GlassMenuEffect } from "@/ui/glass-effect"
+import { GlassMenuEffect } from "../ui/glass-effect"
 import { Sparkles } from "lucide-react"
 import { memo } from "react"
-import type { LoadingIndicatorProps } from "@/types"
+import type { LoadingIndicatorProps } from "../types"
 import {
 	loadingContainer,
 	loadingContent,

@@ -1,9 +1,9 @@
 "use client"
 
-import { Badge } from "@/ui/badge"
+import { Badge } from "../ui/badge"
 import { ChevronDown, Eye, Search, X } from "lucide-react"
 import { memo, useEffect, useRef, useState } from "react"
-import type { SpacesDropdownProps } from "@/types"
+import type { SpacesDropdownProps } from "../types"
 import * as styles from "./spaces-dropdown.css"
 
 export const SpacesDropdown = memo<SpacesDropdownProps>(
@@ -48,8 +48,8 @@ export const SpacesDropdown = memo<SpacesDropdownProps>(
 		// Filter spaces based on search query (client-side)
 		const filteredSpaces = searchQuery
 			? availableSpaces.filter((space) =>
-					space.toLowerCase().includes(searchQuery.toLowerCase()),
-				)
+				space.toLowerCase().includes(searchQuery.toLowerCase()),
+			)
 			: availableSpaces
 
 		const totalMemories = Object.values(spaceMemoryCounts).reduce(
@@ -200,41 +200,41 @@ export const SpacesDropdown = memo<SpacesDropdownProps>(
 								{/* Show all spaces, filtered by search query */}
 								{filteredSpaces.length > 0
 									? filteredSpaces.map((space, index) => {
-											const itemIndex = index + 1
-											return (
-												<button
-													ref={(el) => {
-														if (el) itemRefs.current.set(itemIndex, el)
-													}}
-													className={
-														selectedSpace === space
-															? styles.dropdownItemActive
-															: highlightedIndex === itemIndex
-																? styles.dropdownItemHighlighted
-																: styles.dropdownItem
-													}
-													key={space}
-													onClick={() => {
-														onSpaceChange(space)
-														setIsOpen(false)
-													}}
-													onMouseEnter={() => setHighlightedIndex(itemIndex)}
-													type="button"
-												>
-													<span className={styles.dropdownItemLabelTruncate}>
-														{space}
-													</span>
-													<Badge className={styles.dropdownItemBadge}>
-														{spaceMemoryCounts[space] || 0}
-													</Badge>
-												</button>
-											)
-										})
+										const itemIndex = index + 1
+										return (
+											<button
+												ref={(el) => {
+													if (el) itemRefs.current.set(itemIndex, el)
+												}}
+												className={
+													selectedSpace === space
+														? styles.dropdownItemActive
+														: highlightedIndex === itemIndex
+															? styles.dropdownItemHighlighted
+															: styles.dropdownItem
+												}
+												key={space}
+												onClick={() => {
+													onSpaceChange(space)
+													setIsOpen(false)
+												}}
+												onMouseEnter={() => setHighlightedIndex(itemIndex)}
+												type="button"
+											>
+												<span className={styles.dropdownItemLabelTruncate}>
+													{space}
+												</span>
+												<Badge className={styles.dropdownItemBadge}>
+													{spaceMemoryCounts[space] || 0}
+												</Badge>
+											</button>
+										)
+									})
 									: searchQuery && (
-											<div className={styles.emptyState}>
-												No spaces found matching "{searchQuery}"
-											</div>
-										)}
+										<div className={styles.emptyState}>
+											No spaces found matching "{searchQuery}"
+										</div>
+									)}
 							</div>
 						</div>
 					</div>

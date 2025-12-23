@@ -6,9 +6,10 @@ import { cn } from "@/lib/utils";
 import { SearchBar } from "./search-bar";
 import { ConversationItem } from "./conversation-item";
 import { ScrollArea } from "./ui/scroll-area";
-import { ThemeToggle } from "./theme-toggle"; // Added import
+import { ThemeToggle } from "./theme-toggle";
 import { format, isToday, isYesterday, isThisWeek, parseISO } from "date-fns";
 import { useTheme } from "next-themes";
+import { MessageSquarePlus } from "lucide-react";
 
 interface SidebarProps {
     children?: ReactNode;
@@ -103,17 +104,15 @@ export function Sidebar({
         return hasMatchInMessages || hasMatchInNames;
     });
 
-    // Simplified Keyboard navigation removed for brevity, can be added back if needed
-
     return (
         <div
             className={cn(
-                "flex flex-col h-full border-r border-white/5",
-                isMobileView ? "bg-background" : "glass"
+                "flex flex-col h-full border-r border-white/5 transition-colors duration-300",
+                isMobileView ? "bg-background" : "bg-black/20 backdrop-blur-xl"
             )}
         >
             {children}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-hidden relative">
                 <ScrollArea
                     className="h-full"
                     onScrollCapture={(e: React.UIEvent<HTMLDivElement>) => {
@@ -128,56 +127,54 @@ export function Sidebar({
                     withVerticalMargins={false}
                     bottomMargin="0px"
                 >
-                    <div className={`${isMobileView ? "w-full" : "w-[320px]"} px-3 py-2 space-y-2`}>
-                        <SearchBar value={searchTerm} onChange={onSearchChange} />
-                        <div className="w-full pt-2">
+                    <div className={`${isMobileView ? "w-full" : "w-[320px]"} px-3 py-4 space-y-4`}>
+                        <div className="px-1">
+                            <SearchBar value={searchTerm} onChange={onSearchChange} />
+                        </div>
+
+                        <div className="w-full">
                             {filteredConversations.length === 0 && searchTerm ? (
-                                <div className="py-8 text-center">
+                                <div className="py-12 text-center">
+                                    <div className="w-12 h-12 rounded-full bg-white/5 mx-auto flex items-center justify-center mb-3">
+                                        <MessageSquarePlus className="w-5 h-5 text-muted-foreground/50" />
+                                    </div>
                                     <p className="text-sm text-muted-foreground">
-                                        No results found
+                                        No conversations found
                                     </p>
                                 </div>
                             ) : (
                                 <div className="space-y-1">
-                                    {filteredConversations.map((conversation, index, array) => {
-                                        const isActive = conversation.id === activeConversation;
-                                        const nextConversation = array[index + 1];
-                                        const isNextActive =
-                                            nextConversation?.id === activeConversation;
-
-                                        return (
-                                            <ConversationItem
-                                                key={conversation.id}
-                                                // data-conversation-id={conversation.id}
-                                                conversation={{
-                                                    ...conversation,
-                                                    isTyping:
-                                                        typingStatus?.conversationId === conversation.id,
-                                                }}
-                                                activeConversation={activeConversation}
-                                                onSelectConversation={onSelectConversation}
-                                                onDeleteConversation={onDeleteConversation}
-                                                onUpdateConversation={onUpdateConversation}
-                                                conversations={conversations}
-                                                formatTime={formatTime}
-                                                getInitials={getInitials}
-                                                isMobileView={isMobileView}
-                                                showDivider={false} // Removed divider for cleaner look
-                                                openSwipedConvo={openSwipedConvo}
-                                                setOpenSwipedConvo={setOpenSwipedConvo}
-                                            />
-                                        );
-                                    })}
+                                    {filteredConversations.map((conversation, index) => (
+                                        <ConversationItem
+                                            key={conversation.id}
+                                            conversation={{
+                                                ...conversation,
+                                                isTyping: typingStatus?.conversationId === conversation.id,
+                                            }}
+                                            activeConversation={activeConversation}
+                                            onSelectConversation={onSelectConversation}
+                                            onDeleteConversation={onDeleteConversation}
+                                            onUpdateConversation={onUpdateConversation}
+                                            conversations={conversations}
+                                            formatTime={formatTime}
+                                            getInitials={getInitials}
+                                            isMobileView={isMobileView}
+                                            showDivider={false}
+                                            openSwipedConvo={openSwipedConvo}
+                                            setOpenSwipedConvo={setOpenSwipedConvo}
+                                        />
+                                    ))}
                                 </div>
                             )}
                         </div>
                     </div>
                 </ScrollArea>
             </div>
-            <div className="p-3 border-t border-white/5 flex justify-between items-center bg-black/10 backdrop-blur-sm">
-                <div className="text-xs text-muted-foreground/60 px-2">
-                    Nova Chat v0.1
+            <div className="px-4 py-3 border-t border-white/5 flex justify-between items-center bg-black/20 backdrop-blur-md">
+                <div className="text-[10px] uppercase tracking-wider font-medium text-white/30">
+                    Nova Chat
                 </div>
+                {/* Could add user profile or settings trigger here */}
             </div>
         </div>
     );

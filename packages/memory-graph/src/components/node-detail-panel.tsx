@@ -1,8 +1,8 @@
 "use client"
 
-import { Badge } from "@/ui/badge"
-import { Button } from "@/ui/button"
-import { GlassMenuEffect } from "@/ui/glass-effect"
+import { Badge } from "../ui/badge"
+import { Button } from "../ui/button"
+import { GlassMenuEffect } from "../ui/glass-effect"
 import { Brain, Calendar, ExternalLink, FileText, Hash, X } from "lucide-react"
 import { motion } from "motion/react"
 import { memo } from "react"
@@ -18,10 +18,10 @@ import {
 	NotionDoc,
 	OneDrive,
 	PDF,
-} from "@/assets/icons"
-import { HeadingH3Bold } from "@/ui/heading"
-import type { DocumentWithMemories, MemoryEntry } from "@/types"
-import type { NodeDetailPanelProps } from "@/types"
+} from "../assets/icons"
+import { HeadingH3Bold } from "../ui/heading"
+import type { DocumentWithMemories, MemoryEntry } from "../types"
+import type { NodeDetailPanelProps } from "../types"
 import * as styles from "./node-detail-panel.css"
 
 const formatDocumentType = (type: string) => {
@@ -164,32 +164,32 @@ export const NodeDetailPanel = memo(function NodeDetailPanel({
 
 							{((data as DocumentWithMemories).url ||
 								(data as DocumentWithMemories).customId) && (
-								<div className={styles.section}>
-									<span className={styles.sectionLabel}>URL</span>
-									<a
-										className={styles.link}
-										href={(() => {
-											const doc = data as DocumentWithMemories
-											if (doc.type === "google_doc" && doc.customId) {
-												return `https://docs.google.com/document/d/${doc.customId}`
-											}
-											if (doc.type === "google_sheet" && doc.customId) {
-												return `https://docs.google.com/spreadsheets/d/${doc.customId}`
-											}
-											if (doc.type === "google_slide" && doc.customId) {
-												return `https://docs.google.com/presentation/d/${doc.customId}`
-											}
-											return doc.url ?? undefined
-										})()}
-										rel="noopener noreferrer"
-										target="_blank"
-									>
-										{/* @ts-ignore */}
-										<ExternalLink className={styles.linkIcon} />
-										View Document
-									</a>
-								</div>
-							)}
+									<div className={styles.section}>
+										<span className={styles.sectionLabel}>URL</span>
+										<a
+											className={styles.link}
+											href={(() => {
+												const doc = data as DocumentWithMemories
+												if (doc.type === "google_doc" && doc.customId) {
+													return `https://docs.google.com/document/d/${doc.customId}`
+												}
+												if (doc.type === "google_sheet" && doc.customId) {
+													return `https://docs.google.com/spreadsheets/d/${doc.customId}`
+												}
+												if (doc.type === "google_slide" && doc.customId) {
+													return `https://docs.google.com/presentation/d/${doc.customId}`
+												}
+												return doc.url ?? undefined
+											})()}
+											rel="noopener noreferrer"
+											target="_blank"
+										>
+											{/* @ts-ignore */}
+											<ExternalLink className={styles.linkIcon} />
+											View Document
+										</a>
+									</div>
+								)}
 						</>
 					) : (
 						<>
@@ -208,8 +208,8 @@ export const NodeDetailPanel = memo(function NodeDetailPanel({
 										Expires:{" "}
 										{(data as MemoryEntry).forgetAfter
 											? new Date(
-													(data as MemoryEntry).forgetAfter!,
-												).toLocaleDateString()
+												(data as MemoryEntry).forgetAfter!,
+											).toLocaleDateString()
 											: ""}{" "}
 										{"forgetReason" in data && (data as any).forgetReason
 											? `- ${(data as any).forgetReason}`
