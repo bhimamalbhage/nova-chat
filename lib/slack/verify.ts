@@ -1,4 +1,4 @@
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 export function verifySlackRequest(
     req: Request,
@@ -23,7 +23,7 @@ export function verifySlackRequest(
         .update(sigBasestring, 'utf8')
         .digest('hex');
 
-    return crypto.timingSafeEqual(
+    return timingSafeEqual(
         Buffer.from(mySignature, 'utf8'),
         Buffer.from(signature, 'utf8')
     );
