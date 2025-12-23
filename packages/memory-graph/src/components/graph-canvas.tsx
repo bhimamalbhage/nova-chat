@@ -48,10 +48,35 @@ export const GraphCanvas = memo<GraphCanvasProps>(
 		const mousePos = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
 		const currentHoveredNode = useRef<string | null>(null)
 
+		// Animation state
+		const nodeBirthTimes = useRef<Map<string, number>>(new Map())
+		const rippleState = useRef<{ nodeId: string; startTime: number } | null>(null)
+		const focusTransitionProgress = useRef<number>(1) // 0 to 1, for smooth focus mode transitions
+		const lastHoverChangeTime = useRef<number>(0)
+
 		// Initialize start time once
 		useEffect(() => {
 			startTimeRef.current = Date.now()
 		}, [])
+
+		// Track new nodes for entry animations
+		useEffect(() => {
+			const now = Date.now()
+			nodes.forEach((node) => {
+				if (!nodeBirthTimes.current.has(node.id)) {
+					nodeBirthTimes.current.set(node.id, now)
+				}
+			})
+
+			// Clean up old nodes
+			const currentNodeIds = new Set(nodes.map(n => n.id))
+			for (const [nodeId] of nodeBirthTimes.current) {
+				if (!currentNodeIds.has(nodeId)) {
+					nodeBirthTimes.current.delete(nodeId)
+				}
+			}
+		}, [nodes])
+
 
 		// Efficient hit detection
 		const getNodeAtPosition = useCallback(
@@ -91,6 +116,13 @@ export const GraphCanvas = memo<GraphCanvasProps>(
 				const nodeId = getNodeAtPosition(x, y)
 				if (nodeId !== currentHoveredNode.current) {
 					currentHoveredNode.current = nodeId
+					lastHoverChangeTime.current = Date.now()
+
+					// Trigger ripple effect when hovering over a new node
+					if (nodeId) {
+						rippleState.current = { nodeId, startTime: Date.now() }
+					}
+
 					onNodeHover(nodeId)
 				}
 
@@ -181,10 +213,23 @@ export const GraphCanvas = memo<GraphCanvasProps>(
 			// Create node lookup map
 			const nodeMap = new Map(nodes.map((node) => [node.id, node]))
 
+			// Current time for animations
+			const now = Date.now()
+
 			// Focus Mode Logic: Identify neighbors if hovering
 			const hoveredNodeId = currentHoveredNode.current
 			const neighborSet = new Set<string>()
 			const relatedEdgeSet = new Set<string>() // Store edge IDs if available, or just use logic
+
+			// Smooth focus transition (animate from 0 to 1 over 200ms)
+			const focusTransitionDuration = 200
+			const timeSinceHoverChange = now - lastHoverChangeTime.current
+			if (timeSinceHoverChange < focusTransitionDuration) {
+				focusTransitionProgress.current = Math.min(1, timeSinceHoverChange / focusTransitionDuration)
+			} else {
+				focusTransitionProgress.current = 1
+			}
+
 
 			if (hoveredNodeId) {
 				neighborSet.add(hoveredNodeId)
@@ -230,11 +275,16 @@ export const GraphCanvas = memo<GraphCanvasProps>(
 					let opacity = edge.visualProps.opacity
 					let lineWidth = Math.max(1, edge.visualProps.thickness * zoom)
 
+					// Smooth focus transition for opacity changes
 					if (hoveredNodeId && !isRelated) {
-						opacity *= 0.1 // Dim unrelated edges significantly
+						const targetOpacity = opacity * 0.1
+						const currentOpacity = opacity * (1 - focusTransitionProgress.current * 0.9)
+						opacity = currentOpacity
 					} else if (hoveredNodeId && isRelated) {
-						opacity = Math.min(1, opacity * 1.5) // Boost connected edges
-						lineWidth *= 1.5
+						const targetOpacity = Math.min(1, opacity * 1.5)
+						const currentOpacity = opacity + (targetOpacity - opacity) * focusTransitionProgress.current
+						opacity = currentOpacity
+						lineWidth *= (1 + 0.5 * focusTransitionProgress.current)
 					}
 
 					if (edge.edgeType === "doc-memory") {
@@ -243,11 +293,17 @@ export const GraphCanvas = memo<GraphCanvasProps>(
 						if (!isRelated && hoveredNodeId) lineWidth = 0.25
 					} else if (edge.edgeType === "doc-doc") {
 						const isStrong = edge.similarity > 0.8
+
+						// Pulse animation for strong connections (2 second cycle)
+						const pulseProgress = (now % 2000) / 2000
+						const pulseValue = Math.sin(pulseProgress * Math.PI * 2) * 0.5 + 0.5 // 0 to 1
+
 						// Gradient for strong connections
 						if (isStrong && !useSimplifiedRendering) {
+							const basePulse = 0.4 + pulseValue * 0.15 // Pulse between 0.4 and 0.55
 							const grad = ctx.createLinearGradient(sourceX, sourceY, targetX, targetY)
 							grad.addColorStop(0, "rgba(56, 189, 248, 0.05)")
-							grad.addColorStop(0.5, "rgba(56, 189, 248, 0.4)")
+							grad.addColorStop(0.5, `rgba(56, 189, 248, ${basePulse})`)
 							grad.addColorStop(1, "rgba(56, 189, 248, 0.05)")
 							connectionColor = grad
 						} else {
@@ -266,6 +322,15 @@ export const GraphCanvas = memo<GraphCanvasProps>(
 					ctx.lineWidth = lineWidth
 					ctx.globalAlpha = opacity
 					ctx.setLineDash(dashPattern)
+
+					// Animated flow effect for related edges (when hovering)
+					if (isRelated && hoveredNodeId && dashPattern.length > 0) {
+						const flowSpeed = 0.05 // pixels per ms
+						const dashOffset = -(now * flowSpeed) % (dashPattern[0]! + dashPattern[1]!)
+						ctx.lineDashOffset = dashOffset
+					} else {
+						ctx.lineDashOffset = 0
+					}
 
 					// Version chains: Double line
 					if (edge.edgeType === "version") {
@@ -347,11 +412,29 @@ export const GraphCanvas = memo<GraphCanvasProps>(
 				const isHovered = hoveredNodeId === node.id
 				const isDragging = node.isDragging
 
-				// Focus Mode: Dim unrelated nodes
-				const isNeighbor = hoveredNodeId ? neighborSet.has(node.id) : true
-				const alphaMultiplier = isNeighbor ? 1 : 0.2
+				// Entry animation (fade in and scale up over 400ms)
+				const birthTime = nodeBirthTimes.current.get(node.id) || now
+				const age = now - birthTime
+				const entryDuration = 400
+				let entryProgress = Math.min(1, age / entryDuration)
+				// Ease out cubic
+				entryProgress = 1 - Math.pow(1 - entryProgress, 3)
 
-				ctx.globalAlpha = alphaMultiplier
+				const entryScale = 0.5 + (entryProgress * 0.5) // Scale from 0.5 to 1.0
+				const entryAlpha = entryProgress // Fade from 0 to 1
+
+				// Focus Mode: Dim unrelated nodes with smooth transition
+				const isNeighbor = hoveredNodeId ? neighborSet.has(node.id) : true
+				const targetAlpha = isNeighbor ? 1 : 0.2
+				const currentAlpha = isNeighbor ? 1 : (1 - focusTransitionProgress.current * 0.8)
+
+				ctx.globalAlpha = currentAlpha * entryAlpha
+
+				// Save context for scaling
+				ctx.save()
+				ctx.translate(screenX, screenY)
+				ctx.scale(entryScale, entryScale)
+				ctx.translate(-screenX, -screenY)
 
 				// Document Node
 				if (node.type === "document") {
@@ -446,42 +529,57 @@ export const GraphCanvas = memo<GraphCanvasProps>(
 					}
 				}
 
+				// Restore context (undo scaling)
+				ctx.restore()
+
 				ctx.shadowBlur = 0 // Reset
+
+				// Ripple effect on hover
+				if (rippleState.current && rippleState.current.nodeId === node.id && !useSimplifiedRendering) {
+					const rippleAge = now - rippleState.current.startTime
+					const rippleDuration = 600
+
+					if (rippleAge < rippleDuration) {
+						const rippleProgress = rippleAge / rippleDuration
+						const rippleRadius = (nodeSize / 2) + (rippleProgress * nodeSize * 1.5)
+						const rippleOpacity = (1 - rippleProgress) * 0.3
+
+						ctx.strokeStyle = node.type === 'document' ? colors.document.accent : colors.memory.accent
+						ctx.lineWidth = 2
+						ctx.globalAlpha = rippleOpacity
+						ctx.beginPath()
+						ctx.arc(screenX, screenY, rippleRadius, 0, Math.PI * 2)
+						ctx.stroke()
+						ctx.globalAlpha = 1
+					} else {
+						// Clear ripple after animation completes
+						if (rippleState.current.nodeId === node.id) {
+							rippleState.current = null
+						}
+					}
+				}
 			})
 
 		}, [nodes, edges, panX, panY, zoom, width, height, highlightDocumentIds])
 
-		// Change-based rendering instead of continuous animation
-		const lastRenderParams = useRef<string>("")
-
-		// Create a render key that changes when visual state changes
-		const renderKey = useMemo(() => {
-			const nodePositions = nodes
-				.map(
-					(n) =>
-						`${n.id}:${n.x}:${n.y}:${n.isDragging ? "1" : "0"}:${currentHoveredNode.current === n.id ? "1" : "0"}`,
-				)
-				.join("|")
-			const highlightKey = (highlightDocumentIds ?? []).join("|")
-			return `${nodePositions}-${edges.length}-${panX}-${panY}-${zoom}-${width}-${height}-${highlightKey}`
-		}, [
-			nodes,
-			edges.length,
-			panX,
-			panY,
-			zoom,
-			width,
-			height,
-			highlightDocumentIds,
-		])
-
-		// Only render when something actually changed
+		// Continuous animation loop for smooth animations
 		useEffect(() => {
-			if (renderKey !== lastRenderParams.current) {
-				lastRenderParams.current = renderKey
+			let rafId: number
+
+			const animate = () => {
 				render()
+				rafId = requestAnimationFrame(animate)
 			}
-		}, [renderKey, render])
+
+			// Start animation loop
+			rafId = requestAnimationFrame(animate)
+
+			return () => {
+				if (rafId) {
+					cancelAnimationFrame(rafId)
+				}
+			}
+		}, [render])
 
 		// Cleanup any existing animation frames
 		useEffect(() => {
