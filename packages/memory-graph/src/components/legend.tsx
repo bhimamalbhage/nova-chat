@@ -1,16 +1,16 @@
 "use client"
 
-import { useIsMobile } from "@/hooks/use-mobile"
+import { useIsMobile } from "../hooks/use-mobile"
 import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from "@/ui/collapsible"
-import { GlassMenuEffect } from "@/ui/glass-effect"
+} from "../ui/collapsible"
+import { GlassMenuEffect } from "../ui/glass-effect"
 import { Brain, ChevronDown, ChevronUp, FileText } from "lucide-react"
 import { memo, useEffect, useState } from "react"
-import { colors } from "@/constants"
-import type { GraphEdge, GraphNode, LegendProps } from "@/types"
+import { colors } from "../constants"
+import type { GraphEdge, GraphNode, LegendProps } from "../types"
 import * as styles from "./legend.css"
 
 // Cookie utility functions for legend state

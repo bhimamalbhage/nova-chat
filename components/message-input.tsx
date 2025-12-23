@@ -18,6 +18,7 @@ export function MessageInput({
     disabled
 }: MessageInputProps) {
     const [internalValue, setInternalValue] = useState("");
+    const [isFocused, setIsFocused] = useState(false);
 
     // Determine whether we are using controlled or internal state
     const value = controlledValue ?? internalValue;
@@ -40,16 +41,27 @@ export function MessageInput({
     }, []);
 
     return (
-        <div className="p-4 px-6 w-full mb-4">
-            <div className="relative flex items-center w-full group">
+        <div className="w-full relative group">
+            {/* Glow effect behind input */}
+            <div
+                className={cn(
+                    "absolute -inset-0.5 bg-gradient-to-r from-primary via-purple-500 to-blue-500 rounded-[30px] opacity-0 blur transition duration-500 group-hover:opacity-30",
+                    isFocused && "opacity-50 duration-200"
+                )}
+            />
+
+            <div className="relative flex items-center w-full">
                 <input
                     className={cn(
-                        "w-full bg-card/40 backdrop-blur-xl border border-white/10 rounded-[28px] px-6 pl-6 pr-14 py-4",
-                        "focus:outline-none focus:bg-card/60 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 shadow-lg transition-all duration-300",
-                        "placeholder:text-muted-foreground/60 text-[15px] text-foreground"
+                        "w-full bg-[#050511]/80 backdrop-blur-2xl border border-white/10 rounded-[28px] px-6 pl-6 pr-14 py-4",
+                        "focus:outline-none focus:bg-[#050511] transition-all duration-300",
+                        "placeholder:text-muted-foreground/50 text-[15px] text-foreground leading-relaxed",
+                        isFocused && "shadow-2xl ring-1 ring-white/10"
                     )}
                     value={value}
                     onChange={handleChange}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
                     onKeyDown={e => e.key === 'Enter' && !disabled && handleSend()}
                     placeholder="Ask anything..."
                     disabled={disabled}
@@ -62,7 +74,7 @@ export function MessageInput({
                         "absolute right-2 top-1/2 -translate-y-1/2 p-2.5 rounded-full transition-all duration-300 scale-95 hover:scale-100 active:scale-95",
                         !value.trim() || disabled
                             ? "bg-transparent text-muted-foreground/20 cursor-not-allowed"
-                            : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20"
+                            : "bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg shadow-primary/25 hover:shadow-primary/40"
                     )}
                 >
                     <Icons.arrowUp className="h-5 w-5" strokeWidth={3} />

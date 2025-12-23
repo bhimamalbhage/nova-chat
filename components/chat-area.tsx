@@ -10,9 +10,9 @@ import { cn, generateUUID } from '@/lib/utils';
 import { useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 import { useChat } from '@ai-sdk/react';
-import { CheckCheck } from 'lucide-react';
-
+import { CheckCheck, Sparkles } from 'lucide-react';
 import { TurnManager } from '@/lib/utils/turn-manager';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface ChatAreaProps {
     chatId: string;
@@ -34,11 +34,6 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
     const chatHelpers = useChat({
         id: chatId,
         generateId: generateUUID,
-        body: {
-            id: chatId,
-            selectedChatModel: 'chat-model',
-            selectedVisibilityType: 'private',
-        },
         onFinish: () => {
             if (onNewMessage && messages.length === 0) onNewMessage();
         },
@@ -52,6 +47,14 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
         // Track typing for TurnManager
         turnManager.current.addMessage(text);
 
+        const requestOptions = {
+            body: {
+                id: chatId,
+                selectedChatModel: 'chat-model',
+                selectedVisibilityType: 'private',
+            }
+        };
+
         // Merge if needed
         if (turnManager.current.shouldMerge()) {
             const lastUserIndex = messages.findLastIndex(m => m.role === 'user');
@@ -60,12 +63,12 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
                 stop(); // cancel AI response
 
                 const lastUserMsg = messages[lastUserIndex];
-                const lastContent = lastUserMsg.parts
-                    ? lastUserMsg.parts
-                        .filter(p => p.type === 'text')
-                        .map(p => (p as any).text)
+                const lastContent = (lastUserMsg as any).parts
+                    ? (lastUserMsg as any).parts
+                        .filter((p: any) => p.type === 'text')
+                        .map((p: any) => p.text)
                         .join("\n")
-                    : lastUserMsg.content;
+                    : (lastUserMsg as any).content;
 
                 const mergedText = (lastContent || '') + "\n" + turnManager.current.getMergedMessage();
 
@@ -78,7 +81,7 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
                 setTimeout(() => sendMessage({
                     role: 'user',
                     content: mergedText
-                } as any), 50);
+                } as any, requestOptions), 50);
 
                 setInputValue(""); // clear input after sending
                 return;
@@ -90,7 +93,7 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
         sendMessage({
             role: 'user',
             content: text
-        } as any);
+        } as any, requestOptions);
         setInputValue("");
     };
 
@@ -137,7 +140,6 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
 
     return (
         <div className="flex flex-col h-full bg-transparent relative w-full">
-
             <ConversationHeader
                 isMobileView={isMobileView}
                 onBack={onBack}
@@ -150,89 +152,103 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
                 ) : (
                     <ScrollArea className="h-full px-4">
                         <div className="py-6 space-y-8 max-w-3xl mx-auto">
-                            {messages.map((m, index) => {
-                                const messageStatus = getMessageStatus(m);
-                                const messageDate = (m as any).createdAt;
-                                const showTime = showTimestamps && messageDate;
+                            <AnimatePresence initial={false} mode="popLayout">
+                                {messages.map((m, index) => {
+                                    const messageStatus = getMessageStatus(m);
+                                    const messageDate = (m as any).createdAt;
+                                    const showTime = showTimestamps && messageDate;
 
-                                return (
-                                    <div
-                                        key={m.id}
-                                        className={cn(
-                                            "flex flex-col w-full animate-message-in opacity-0",
-                                            m.role === 'user' ? "items-end" : "items-start"
-                                        )}
-                                        style={{ animationDelay: `${index * 50}ms` }}
-                                    >
-                                        {/* Calculate distinct message bubbles from splits */}
-                                        {(() => {
-                                            const parts = m.parts || (m.content ? [{ type: 'text', text: m.content }] : []);
-                                            const textContent = parts
-                                                .filter((p: any) => p.type === 'text')
-                                                .map((p: any) => p.text)
-                                                .join('');
+                                    return (
+                                        <motion.div
+                                            key={m.id}
+                                            initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+                                            className={cn(
+                                                "flex flex-col w-full",
+                                                m.role === 'user' ? "items-end" : "items-start"
+                                            )}
+                                        >
+                                            {/* Calculate distinct message bubbles from splits */}
+                                            {(() => {
+                                                const parts = m.parts || ((m as any).content ? [{ type: 'text', text: (m as any).content }] : []);
+                                                const textContent = parts
+                                                    .filter((p: any) => p.type === 'text')
+                                                    .map((p: any) => p.text)
+                                                    .join('');
 
-                                            // Split by delimiter if present
-                                            const splitContent = textContent.split('<SPLIT>');
+                                                // Split by delimiter if present
+                                                const splitContent = textContent.split('<SPLIT>');
 
-                                            return splitContent.map((contentChunk: string, chunkIndex: number) => (
-                                                <div
-                                                    key={`${m.id}-${chunkIndex}`}
-                                                    className={cn(
-                                                        "flex w-full items-end gap-2 mb-2 last:mb-0",
-                                                        m.role === 'user' ? "justify-end" : "justify-start"
-                                                    )}
-                                                >
-                                                    <div
+                                                return splitContent.map((contentChunk: string, chunkIndex: number) => (
+                                                    <motion.div
+                                                        key={`${m.id}-${chunkIndex}`}
+                                                        layout
                                                         className={cn(
-                                                            "max-w-[85%] p-4 px-6 text-[15px] leading-relaxed break-words shadow-lg transition-all duration-300 hover:shadow-xl group",
-                                                            m.role === 'user'
-                                                                ? "bg-gradient-to-br from-primary to-blue-600 text-white rounded-[24px] rounded-br-sm border border-white/10"
-                                                                : "glass text-foreground rounded-[24px] rounded-bl-sm"
+                                                            "flex w-full items-end gap-2 mb-2 last:mb-0",
+                                                            m.role === 'user' ? "justify-end" : "justify-start"
                                                         )}
                                                     >
-                                                        <span className="whitespace-pre-wrap font-medium">{contentChunk}</span>
-
-                                                        {/* Only show timestamp/status on the very last bubble of the split group */}
-                                                        {showTime && chunkIndex === splitContent.length - 1 && (
-                                                            <div className={cn(
-                                                                "text-[10px] mt-2 flex items-center gap-1 opacity-70",
-                                                                m.role === 'user' ? "text-white/80" : "text-muted-foreground"
-                                                            )}>
-                                                                {formatTimestamp(messageDate)}
-                                                                {messageStatus && m.role === 'user' && (
-                                                                    <>
-                                                                        <span>•</span>
-                                                                        <CheckCheck className="w-3 h-3" />
-                                                                    </>
-                                                                )}
+                                                        {m.role === 'assistant' && chunkIndex === 0 && (
+                                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-lg border border-white/10 shrink-0">
+                                                                <Sparkles className="w-4 h-4 text-white" />
                                                             </div>
                                                         )}
-                                                    </div>
-                                                </div>
-                                            ));
-                                        })()}
+                                                        <div
+                                                            className={cn(
+                                                                "max-w-[85%] p-4 px-6 text-[15px] leading-relaxed break-words shadow-lg transition-all duration-300 hover:shadow-xl group backdrop-blur-md",
+                                                                m.role === 'user'
+                                                                    ? "bg-gradient-to-br from-primary to-purple-600 text-white rounded-[24px] rounded-br-sm border border-white/10"
+                                                                    : "bg-white/5 border border-white/10 text-foreground rounded-[24px] rounded-bl-sm"
+                                                            )}
+                                                        >
+                                                            <span className="whitespace-pre-wrap">{contentChunk}</span>
 
-                                        {(m.parts || []).some((p: any) => p.type?.startsWith('tool-')) && (
-                                            <div className="mt-2 text-xs text-muted-foreground glass border border-white/5 p-2 px-3 rounded-lg max-w-[80%] ml-1 inline-flex items-center gap-2">
-                                                {(m.parts || []).filter((p: any) => p.type?.startsWith('tool-')).map((part: any, index: number) => (
-                                                    <div key={index} className="flex gap-2 items-center">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                                                        <span className="font-mono text-[10px] uppercase tracking-wider text-primary/80">
-                                                            {part.type.replace('tool-', '')}
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
+                                                            {/* Only show timestamp/status on the very last bubble of the split group */}
+                                                            {showTime && chunkIndex === splitContent.length - 1 && (
+                                                                <div className={cn(
+                                                                    "text-[10px] mt-2 flex items-center gap-1 opacity-70",
+                                                                    m.role === 'user' ? "text-white/80" : "text-muted-foreground"
+                                                                )}>
+                                                                    {formatTimestamp(messageDate)}
+                                                                    {messageStatus && m.role === 'user' && (
+                                                                        <>
+                                                                            <span>•</span>
+                                                                            <CheckCheck className="w-3 h-3" />
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </motion.div>
+                                                ));
+                                            })()}
+
+                                            {(m.parts || []).some((p: any) => p.type?.startsWith('tool-')) && (
+                                                <div className="mt-2 text-xs text-muted-foreground glass border border-white/5 p-2 px-3 rounded-lg max-w-[80%] ml-1 inline-flex items-center gap-2">
+                                                    {(m.parts || []).filter((p: any) => p.type?.startsWith('tool-')).map((part: any, index: number) => (
+                                                        <div key={index} className="flex gap-2 items-center">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                                            <span className="font-mono text-[10px] uppercase tracking-wider text-primary/80">
+                                                                {part.type.replace('tool-', '')}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </motion.div>
+                                    );
+                                })}
+                            </AnimatePresence>
 
                             {(status === 'streaming' || status === 'submitted') && (
-                                <div className="flex justify-start animate-in fade-in duration-300">
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="flex justify-start pl-10"
+                                >
                                     <TypingIndicator />
-                                </div>
+                                </motion.div>
                             )}
 
                             <div ref={scrollRef} className="h-4" />
@@ -241,8 +257,8 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
                 )}
             </div>
 
-            <div className="w-full bg-background/0 backdrop-blur-none pb-safe z-10">
-                <div className="max-w-3xl mx-auto">
+            <div className="w-full bg-background/0 backdrop-blur-none pb-safe z-10 px-4 mb-4">
+                <div className="max-w-3xl mx-auto glass-panel rounded-2xl p-2 shadow-2xl ring-1 ring-white/5 flex items-center gap-2">
                     <MessageInput
                         value={inputValue}
                         onChange={setInputValue}

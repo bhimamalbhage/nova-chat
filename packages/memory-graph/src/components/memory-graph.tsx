@@ -1,21 +1,21 @@
 "use client"
 
-import { GlassMenuEffect } from "@/ui/glass-effect"
+import { GlassMenuEffect } from "../ui/glass-effect"
 import { AnimatePresence } from "motion/react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { GraphCanvas } from "./graph-canvas"
-import { useGraphData } from "@/hooks/use-graph-data"
-import { useGraphInteractions } from "@/hooks/use-graph-interactions"
-import { injectStyles } from "@/lib/inject-styles"
+import { useGraphData } from "../hooks/use-graph-data"
+import { useGraphInteractions } from "../hooks/use-graph-interactions"
+import { injectStyles } from "../lib/inject-styles"
 import { Legend } from "./legend"
 import { LoadingIndicator } from "./loading-indicator"
 import { NavigationControls } from "./navigation-controls"
 import { NodeDetailPanel } from "./node-detail-panel"
 import { SpacesDropdown } from "./spaces-dropdown"
 import * as styles from "./memory-graph.css"
-import { defaultTheme } from "@/styles/theme.css"
+import { defaultTheme } from "../styles/theme.css"
 
-import type { MemoryGraphProps } from "@/types"
+import type { MemoryGraphProps } from "../types"
 
 export const MemoryGraph = ({
 	children,

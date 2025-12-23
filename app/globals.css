@@ -2,8 +2,8 @@
 @plugin "tailwindcss-animate";
 
 :root {
-  /* Light Theme */
-  --background: 0 0% 100%;
+  /* Light Theme - Clean & Crisp */
+  --background: 210 40% 98%; /* Slightly cool white */
   --foreground: 222 47% 11%;
 
   --card: 0 0% 100%;
@@ -12,14 +12,13 @@
   --popover: 0 0% 100%;
   --popover-foreground: 222 47% 11%;
 
-  --primary: 190 100% 40%;
-  /* Darker cyan for light mode readability */
+  --primary: 250 100% 65%; /* Electric Purple/Blue */
   --primary-foreground: 210 40% 98%;
 
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 222 47.4% 11.2%;
 
-  --muted: 210 40% 96.1%;
+  --muted: 210 40% 90%;
   --muted-foreground: 215.4 16.3% 46.9%;
 
   --accent: 210 40% 96.1%;
@@ -30,54 +29,51 @@
 
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
-  --ring: 190 100% 40%;
+  --ring: 250 100% 65%;
 
-  --radius: 0.75rem;
+  --radius: 1rem; /* More rounded premium feel */
 
-  --chart-1: 190 100% 40%;
+  /* Chart colors remain roughly same but vibrant */
+  --chart-1: 250 100% 65%;
   --chart-2: 217 91% 60%;
-  --chart-3: 262 83% 58%;
+  --chart-3: 190 100% 40%;
   --chart-4: 280 65% 60%;
   --chart-5: 340 75% 55%;
 }
 
 .dark {
-  /* Supermemory Dark Theme */
-  --background: 222 47% 4%;
-  /* #020412 */
+  /* Deep Cosmos Theme */
+  --background: 240 25% 4%; /* #050511 - Deep distinct dark */
   --foreground: 210 40% 98%;
-  /* f8fafc */
 
-  --card: 225 27% 10%;
-  /* #0B0E25 */
+  --card: 240 20% 7%; /* Slightly lighter than bg */
   --card-foreground: 210 40% 98%;
 
-  --popover: 225 27% 10%;
+  --popover: 240 20% 7%;
   --popover-foreground: 210 40% 98%;
 
-  --primary: 190 100% 50%;
-  /* Supermemory Cyan */
-  --primary-foreground: 222 47.4% 11.2%;
+  --primary: 252 100% 68%; /* Vibrant Neon Purple/Blue */
+  --primary-foreground: 210 40% 98%;
 
-  --secondary: 217 33% 17%;
+  --secondary: 240 15% 12%; /* Dark subtle secondary */
   --secondary-foreground: 210 40% 98%;
 
-  --muted: 217 33% 17%;
-  --muted-foreground: 215 20.2% 65.1%;
+  --muted: 240 15% 12%;
+  --muted-foreground: 240 10% 65%;
 
-  --accent: 217 33% 17%;
+  --accent: 240 15% 15%; /* Highlight for glass */
   --accent-foreground: 210 40% 98%;
 
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 210 40% 98%;
 
-  --border: 217 33% 20%;
-  --input: 217 33% 17.5%;
-  --ring: 190 100% 50%;
+  --border: 240 15% 15%;
+  --input: 240 15% 15%;
+  --ring: 252 100% 68%;
 
-  --chart-1: 190 100% 50%;
-  --chart-2: 217 91% 60%;
-  --chart-3: 262 83% 58%;
+  --chart-1: 252 100% 68%;
+  --chart-2: 190 100% 50%;
+  --chart-3: 310 90% 65%;
   --chart-4: 280 65% 60%;
   --chart-5: 340 75% 55%;
 }
@@ -118,34 +114,32 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
+    @apply bg-background text-foreground antialiased selection:bg-primary/30 selection:text-white;
+    /* Premium atmospheric background */
     background-image:
-      radial-gradient(circle at 50% 0%, hsl(var(--primary) / 0.15) 0%, transparent 60%),
-      radial-gradient(circle at 80% 10%, hsl(217 91% 60% / 0.08) 0%, transparent 40%);
-  }
-
-  /* Keyboard navigation focus styles */
-  *:focus-visible {
-    @apply outline-none ring-2 ring-primary/50 ring-offset-2 ring-offset-background;
-  }
-
-  button:focus-visible,
-  a:focus-visible {
-    @apply outline-none ring-2 ring-primary/50 ring-offset-2 ring-offset-background rounded-md;
+      radial-gradient(circle at 10% 0%, hsl(var(--primary) / 0.12) 0%, transparent 40%),
+      radial-gradient(circle at 90% 10%, hsl(310 90% 65% / 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 50% 100%, hsl(var(--primary) / 0.05) 0%, transparent 60%);
+    background-attachment: fixed;
   }
 }
 
 @layer utilities {
   .glass {
-    @apply bg-background/40 backdrop-blur-xl border border-white/5 supports-[backdrop-filter]:bg-background/20;
+    @apply bg-background/60 backdrop-blur-xl border border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)] supports-[backdrop-filter]:bg-background/40;
   }
 
+  /* Deeper glass for improved readability on dark backgrounds */
   .glass-panel {
-    @apply bg-card/60 backdrop-blur-lg border border-white/5 shadow-xl;
+    @apply bg-[#050511]/70 backdrop-blur-2xl border border-white/5 shadow-2xl;
+  }
+  
+  .glass-card {
+    @apply bg-card/40 backdrop-blur-lg border border-white/5 shadow-lg transition-all duration-300 hover:bg-card/60 hover:border-white/10;
   }
 
   .glow-text {
-    text-shadow: 0 0 10px hsl(var(--primary) / 0.5);
+    text-shadow: 0 0 15px hsl(var(--primary) / 0.6);
   }
 
   .text-balance {
@@ -154,61 +148,29 @@
 
   /* Smooth transitions */
   .transition-smooth {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 }
 
-/* Animations */
-@keyframes blink {
-
-  0%,
-  100% {
-    opacity: 0.3;
-  }
-
-  50% {
-    opacity: 1;
-  }
+/* Animations using standard CSS for base stuff, specialized via famer-motion in components */
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.8; }
 }
 
-@keyframes slideInFromBottom {
-  0% {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-.animate-message-in {
-  animation: slideInFromBottom 0.3s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
-}
-
-.animate-in {
-  animation: fadeIn 0.3s ease-in forwards;
-}
-
-.fade-in {
-  animation: fadeIn 0.3s ease-in forwards;
+.animate-float {
+  animation: float 4s ease-in-out infinite;
 }
 
 /* Custom Scrollbar for cleaner look */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -216,7 +178,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/40 transition-colors;
+  @apply bg-muted-foreground/20 rounded-full hover:bg-primary/50 transition-colors;
 }
 
 .cm-editor,

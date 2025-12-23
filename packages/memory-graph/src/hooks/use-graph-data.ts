@@ -4,9 +4,9 @@ import {
 	calculateSemanticSimilarity,
 	getConnectionVisualProps,
 	getMagicalConnectionColor,
-} from "@/lib/similarity"
+} from "../lib/similarity"
 import { useMemo } from "react"
-import { colors, LAYOUT_CONSTANTS } from "@/constants"
+import { colors, LAYOUT_CONSTANTS } from "../constants"
 import type {
 	DocumentsResponse,
 	DocumentWithMemories,
@@ -14,7 +14,7 @@ import type {
 	GraphNode,
 	MemoryEntry,
 	MemoryRelation,
-} from "@/types"
+} from "../types"
 
 export function useGraphData(
 	data: DocumentsResponse | null,
@@ -37,10 +37,10 @@ export function useGraphData(
 					selectedSpace === "all"
 						? doc.memoryEntries
 						: doc.memoryEntries.filter(
-								(memory) =>
-									(memory.spaceContainerTag ?? memory.spaceId ?? "default") ===
-									selectedSpace,
-							)
+							(memory) =>
+								(memory.spaceContainerTag ?? memory.spaceId ?? "default") ===
+								selectedSpace,
+						)
 
 				// Apply memory limit if provided and a specific space is selected
 				if (selectedSpace !== "all" && memoryLimit && memoryLimit > 0) {

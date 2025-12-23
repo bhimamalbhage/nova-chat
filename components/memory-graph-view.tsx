@@ -250,7 +250,7 @@ export function MemoryGraphView({ isActive = true, isMobileView = false }: Memor
             <ResizableHandle withHandle />
 
             {/* Graph Area Panel */}
-            <ResizablePanel defaultSize={70} className="relative bg-gradient-to-b from-gray-900 to-black">
+            <ResizablePanel defaultSize={70} className="relative bg-[#020410] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-950/20 to-[#020410]">
                 {hasInitialized && documents.length === 0 && !isLoading && (
                     <div className="absolute inset-0 flex items-center justify-center z-10">
                         <div className="text-center p-8">
