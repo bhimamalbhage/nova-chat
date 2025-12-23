@@ -43,11 +43,11 @@ export class ProactiveAgent {
         }
 
         // 2. Throttling Check
-        const shouldThrottle = await this.checkThrottle();
-        if (shouldThrottle) {
-            console.log('[ProactiveAgent] Throttled. Skipping message.');
-            return;
-        }
+        // const shouldThrottle = await this.checkThrottle();
+        // if (shouldThrottle) {
+        //     console.log('[ProactiveAgent] Throttled. Skipping message.');
+        //     return;
+        // }
 
         // 3. Evaluate & Decide
         const decision = await this.evaluate(signals);
@@ -57,7 +57,7 @@ export class ProactiveAgent {
             console.log(`[ProactiveAgent] Message: "${decision.message}"`);
 
             // 4. Execute
-            await this.execute(decision.message);
+            await this.execute(decision);
         } else {
             console.log('[ProactiveAgent] Decision: NO MESSAGE');
         }
@@ -76,24 +76,39 @@ export class ProactiveAgent {
             const now = new Date();
             const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-            // We use the tool execution API from Composio
-            // Or we can use the client directly if we have the specific action wrappers
-            // For now, simpler to use the raw execute logic if possible, or just skip if too complex for this file
-            // We will try to get the 'GOOGLECALENDAR_LIST_EVENTS' tool and execute it.
-
-            // NOTE: Accessing tools directly via SDK for backend execution
             try {
-                const calendarTool = await this.composio.tools.get(this.userId, 'GOOGLECALENDAR_LIST_EVENTS');
-                if (calendarTool && calendarTool['GOOGLECALENDAR_LIST_EVENTS']) {
-                    // The SDK usage here is a bit hypothetical based on standard Composio patterns
-                    // Adjusting to what I saw in composio.ts: tool.execute(...args)
-                    const result = await calendarTool['GOOGLECALENDAR_LIST_EVENTS'].execute({
+                const { createComposioTools } = await import('@/lib/ai/tools/composio');
+                const tools = await createComposioTools(process.env.COMPOSIO_API_KEY!, this.userId) as any;
+
+                if (tools && tools.GOOGLECALENDAR_EVENTS_LIST) {
+                    const result = await tools.GOOGLECALENDAR_EVENTS_LIST.execute({
                         timeMin: now.toISOString(),
                         timeMax: tomorrow.toISOString(),
                         maxResults: 5,
                         singleEvents: true
                     });
 
+                    // Handle Composio's nested data structure (result.data.items OR result.items)
+                    const items = result.items || (result.data && result.data.items) || [];
+
+                    if (Array.isArray(items)) {
+                        items.forEach((item: any) => {
+                            signals.push({
+                                type: 'calendar',
+                                content: `Event: ${item.summary} at ${item.start.dateTime || item.start.date}`,
+                                importance: 0.8,
+                                sourceStr: 'Google Calendar'
+                            });
+                        });
+                    }
+                } else if (tools && tools.GOOGLECALENDAR_FIND_EVENT) {
+                    // Fallback to FIND_EVENT if LIST is not available
+                    console.log('[ProactiveAgent] LIST_EVENTS not found, trying FIND_EVENT...');
+                    const result = await tools.GOOGLECALENDAR_FIND_EVENT.execute({
+                        query: "meeting", // Generic query to try and catch something
+                        timeMin: now.toISOString(),
+                        timeMax: tomorrow.toISOString()
+                    });
                     if (result && result.items && Array.isArray(result.items)) {
                         result.items.forEach((item: any) => {
                             signals.push({
@@ -104,9 +119,13 @@ export class ProactiveAgent {
                             });
                         });
                     }
+                } else {
+                    console.log('[ProactiveAgent] GOOGLECALENDAR_EVENTS_LIST tool not found in available tools.');
                 }
+
+
             } catch (e) {
-                console.log('[ProactiveAgent] Calendar fetch failed or not connected:', e);
+                console.log('[ProactiveAgent] Calendar fetch failed:', e);
             }
 
             // --- Memory Signals (Supermemory) ---
@@ -153,7 +172,7 @@ export class ProactiveAgent {
         return false;
     }
 
-    private async evaluate(signals: Signal[]): Promise<{ shouldMessage: boolean; message?: string }> {
+    private async evaluate(signals: Signal[]): Promise<{ shouldMessage: boolean; message?: string; title?: string }> {
         // "Think" Step
 
         const signalContext = signals.map(s => `- [${s.type.toUpperCase()}] ${s.content}`).join('\n');
@@ -173,7 +192,12 @@ export class ProactiveAgent {
            - Do NOT sound like a notification bot.
            - Keep it short (1-2 sentences).
         
-        Output a JSON object: { "shouldMessage": boolean, "message": string | null, "reasoning": string }
+        Output a JSON object: { 
+            "shouldMessage": boolean, 
+            "message": string | null, 
+            "reasoning": string,
+            "title": string | null   // Short title if taking action (e.g. "Calendar Briefing", "Standup Prep")
+        }
         `;
 
         try {
@@ -183,6 +207,7 @@ export class ProactiveAgent {
                     shouldMessage: z.boolean(),
                     message: z.string().nullable(),
                     reasoning: z.string(),
+                    title: z.string().nullable().optional(),
                 }),
                 prompt: prompt,
             });
@@ -190,6 +215,7 @@ export class ProactiveAgent {
             return {
                 shouldMessage: object.shouldMessage,
                 message: object.message || undefined,
+                title: object.title || undefined,
             };
         } catch (e) {
             console.error('[ProactiveAgent] Error evaluating:', e);
@@ -197,32 +223,31 @@ export class ProactiveAgent {
         }
     }
 
-    private async execute(message: string) {
+    private async execute(decision: { message?: string; title?: string }) {
+        const message = decision.message;
+        if (!message) return;
+
+        console.log('[ProactiveAgent] Message:', JSON.stringify(message));
         // We either Create a New Chat or Append to Latest Chat
         // Strategy: If latest chat is old (> 24h), create new. Else append.
 
-        const recentChats = await getChatsByUserId({ id: this.userId });
-        let targetChatId = recentChats[0]?.id;
-        let isNewChat = false;
+        // Strategy: For Proactive messages, we generally want to start a NEW chat
+        // so it appears as a fresh notification/thread and doesn't get buried in an old context.
+        // UNLESS the user was explicitly talking about this topic just now (which is hard to know).
+        // Simpler approach for "Proactive" feel: Always start fresh.
 
-        if (recentChats.length > 0) {
-            const latestChat = recentChats[0];
-            const diffInHours = (new Date().getTime() - latestChat.createdAt.getTime()) / (1000 * 60 * 60);
-            // If latest chat is older than 24h, start fresh
-            if (diffInHours > 24) {
-                targetChatId = generateUUID();
-                isNewChat = true;
-            }
-        } else {
-            targetChatId = generateUUID();
-            isNewChat = true;
-        }
+        const recentChats = await getChatsByUserId({ id: this.userId });
+        let targetChatId = generateUUID();
+        let isNewChat = true;
+
+        // Optional: If we wanted to thread it, we'd check recentChats[0] here.
+        // But per feedback, we force new chat.
 
         if (isNewChat) {
             await saveChat({
                 id: targetChatId,
                 userId: this.userId,
-                title: 'Proactive Chat', // Could generate a better title
+                title: `⚡️ ${decision.title || 'Proactive Chat'}`,
                 visibility: 'private',
             });
         }

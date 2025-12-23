@@ -30,6 +30,7 @@ export default function App() {
 
     const { data: history, error, mutate: mutateHistory, isLoading } = useSWR<any[]>('/api/history', fetcher, {
         fallbackData: [],
+        refreshInterval: 5000, // Poll every 5 seconds to ensure new chats appear
     });
 
     const conversations: Conversation[] = history?.map(chat => ({
@@ -53,7 +54,22 @@ export default function App() {
     }, []);
 
     const handleDeleteConversation = async (id: string) => {
+        // Optimistic update
         mutateHistory(history?.filter(c => c.id !== id), false);
+
+        try {
+            const response = await fetch(`/api/chat?id=${id}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) {
+                console.error('Failed to delete chat');
+                mutateHistory(); // Re-fetch to restore in case of error
+            }
+        } catch (error) {
+            console.error('Error deleting chat:', error);
+            mutateHistory();
+        }
     };
 
     const handleNewChat = () => {
@@ -150,73 +166,7 @@ export default function App() {
                     "flex-shrink-0 relative z-20 flex flex-col",
                     isMobileView ? "w-full" : "w-[320px] max-w-[320px]"
                 )}>
-                    {/* Fixed Header - Always Visible */}
-                    <div className={cn(
-                        "border-r border-border/40",
-                        isMobileView ? "bg-background" : "bg-muted/30 backdrop-blur-xl"
-                    )}>
-                        {/* Enhanced Navigation Header */}
-                        <div className="p-3 space-y-1 border-b border-border/40">
-                            <div className="flex items-center gap-2 px-2 py-3 mb-2">
-                                <div className="p-2 bg-primary/10 rounded-lg">
-                                    <Sparkles className="h-5 w-5 text-primary" strokeWidth={2} />
-                                </div>
-                                <div className="flex-1">
-                                    <h2 className="font-semibold text-sm tracking-tight">Nova Chat</h2>
-                                </div>
-                                <ThemeToggle />
-                            </div>
-
-                            <Button
-                                variant={activeConversationId && !conversations.find(c => c.id === activeConversationId) ? "secondary" : "default"}
-                                className="w-full justify-start gap-2 shadow-sm"
-                                onClick={handleNewChat}
-                            >
-                                <MessageSquarePlus className="h-4 w-4" />
-                                New Chat
-                            </Button>
-                        </div>
-
-                        {/* Navigation Buttons */}
-                        <div className="p-3 space-y-1 border-b border-border/40">
-                            <Button
-                                variant={currentView === "profile" ? "secondary" : "ghost"}
-                                className="w-full justify-start gap-2"
-                                onClick={() => {
-                                    setCurrentView("profile");
-                                    setActiveConversationId(null);
-                                }}
-                            >
-                                <User className="h-4 w-4" />
-                                Memory Profile
-                            </Button>
-                            <Button
-                                variant={currentView === "integrations" ? "secondary" : "ghost"}
-                                className="w-full justify-start gap-2"
-                                onClick={() => {
-                                    setCurrentView("integrations");
-                                    setActiveConversationId(null);
-                                }}
-                            >
-                                <Settings className="h-4 w-4" />
-                                Integrations
-                            </Button>
-                        </div>
-
-                        {/* Logout at bottom of fixed header */}
-                        <div className="p-3 border-b border-border/40">
-                            <Button
-                                variant="ghost"
-                                className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                onClick={handleLogout}
-                            >
-                                <LogOut className="h-4 w-4" />
-                                Logout
-                            </Button>
-                        </div>
-                    </div>
-
-                    {/* Scrollable Sidebar Content */}
+                    {/* Main Sidebar Component with Header as Children */}
                     <Sidebar
                         conversations={conversations}
                         activeConversation={activeConversationId}
@@ -229,7 +179,83 @@ export default function App() {
                         isMobileView={isMobileView}
                         searchTerm={searchTerm}
                         onSearchChange={setSearchTerm}
-                    />
+                    >
+                        {/* Fixed Header Content moved inside Sidebar */}
+                        <div className={cn(
+                            "border-b border-border/40", // Removed border-r since Sidebar handles it. Changed to border-b.
+                            isMobileView ? "bg-background" : "bg-muted/30 backdrop-blur-xl"
+                        )}>
+                            {/* Enhanced Navigation Header */}
+                            <div className="p-3 space-y-1">
+                                <div className="flex items-center gap-2 px-2 py-3 mb-2">
+                                    <div className="p-2 bg-primary/10 rounded-lg">
+                                        <Sparkles className="h-5 w-5 text-primary" strokeWidth={2} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h2 className="font-semibold text-sm tracking-tight">Nova Chat</h2>
+                                    </div>
+                                    <ThemeToggle />
+                                </div>
+
+                                <Button
+                                    variant={activeConversationId && !conversations.find(c => c.id === activeConversationId) ? "secondary" : "default"}
+                                    className="w-full justify-start gap-2 shadow-sm"
+                                    onClick={handleNewChat}
+                                >
+                                    <MessageSquarePlus className="h-4 w-4" />
+                                    New Chat
+                                </Button>
+                            </div>
+
+                            {/* Navigation Buttons */}
+                            <div className="p-3 space-y-1 border-t border-border/40">
+                                <Button
+                                    variant={currentView === "profile" ? "secondary" : "ghost"}
+                                    className="w-full justify-start gap-2"
+                                    onClick={() => {
+                                        setCurrentView("profile");
+                                        setActiveConversationId(null);
+                                    }}
+                                >
+                                    <User className="h-4 w-4" />
+                                    Memory Profile
+                                </Button>
+                                <Button
+                                    variant={currentView === "integrations" ? "secondary" : "ghost"}
+                                    className="w-full justify-start gap-2"
+                                    onClick={() => {
+                                        setCurrentView("integrations");
+                                        setActiveConversationId(null);
+                                    }}
+                                >
+                                    <Settings className="h-4 w-4" />
+                                    Integrations
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
+                                    onClick={() => window.open('/slack/install', '_blank')}
+                                >
+                                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+                                        <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.52 2.52 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.527 2.527 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.52v-6.315zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.522 2.521 2.527 2.527 0 0 1-2.522-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.522 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.522 2.521A2.527 2.527 0 0 1 15.165 24a2.527 2.527 0 0 1-2.522-2.521v-2.522h2.522zM15.165 17.688a2.527 2.527 0 0 1-2.522-2.521 2.527 2.527 0 0 1 2.522-2.522h6.312A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.522h-6.313z" />
+                                    </svg>
+                                    Connect Slack
+                                </Button>
+                            </div>
+
+                            {/* Logout at bottom of fixed header section */}
+                            <div className="p-3 border-t border-border/40">
+                                <Button
+                                    variant="ghost"
+                                    className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    onClick={handleLogout}
+                                >
+                                    <LogOut className="h-4 w-4" />
+                                    Logout
+                                </Button>
+                            </div>
+                        </div>
+                    </Sidebar>
                 </div>
             )}
 
