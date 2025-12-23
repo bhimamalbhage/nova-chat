@@ -243,17 +243,7 @@ export default function App() {
                                 </Button>
                             </div>
 
-                            {/* Logout at bottom of fixed header section */}
-                            <div className="p-3 border-t border-border/40">
-                                <Button
-                                    variant="ghost"
-                                    className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    onClick={handleLogout}
-                                >
-                                    <LogOut className="h-4 w-4" />
-                                    Logout
-                                </Button>
-                            </div>
+
                         </div>
                     </Sidebar>
                 </div>

@@ -180,11 +180,11 @@ export function ConversationItem({
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelect(); }}
             className={cn(
                 "w-full py-3.5 px-4 text-left relative flex items-center gap-3 transition-all duration-500 rounded-xl group border cursor-pointer",
-                shouldAnimate && "scale-[1.02] shadow-xl shadow-violet-500/20 ring-1 ring-violet-500/50", // Pop effect
+                shouldAnimate && "scale-[1.02] shadow-xl shadow-primary/20 ring-1 ring-primary/50", // Pop effect
                 isActive
                     ? "bg-primary/10 text-primary-foreground shadow-lg shadow-primary/5 border-primary/20 backdrop-blur-md"
                     : isProactive
-                        ? "bg-violet-500/5 hover:bg-violet-500/10 border-violet-500/20 hover:border-violet-500/30 text-foreground"
+                        ? "bg-primary/5 hover:bg-primary/10 border-primary/20 hover:border-primary/30 text-foreground"
                         : "border-transparent hover:bg-white/5 hover:border-white/5 text-muted-foreground hover:text-foreground"
             )}
         >
@@ -192,7 +192,7 @@ export function ConversationItem({
             {(conversation.unreadCount > 0 || (isProactive && !isActive)) && (
                 <div className={cn(
                     "absolute left-1.5 w-2 h-2 rounded-full flex-shrink-0 animate-pulse box-shadow-glow transition-colors duration-500",
-                    isProactive ? "bg-violet-500" : "bg-primary"
+                    isProactive ? "bg-primary" : "bg-primary"
                 )} />
             )}
 
@@ -201,7 +201,7 @@ export function ConversationItem({
                 "w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center shadow-inner transition-all duration-500",
                 shouldAnimate && "animate-bounce", // Icon bounces
                 isProactive
-                    ? "bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white"
+                    ? "bg-gradient-to-br from-primary to-blue-500 text-primary-foreground"
                     : "bg-gradient-to-br from-neutral-200 to-neutral-300 dark:from-neutral-700 dark:to-neutral-800"
             )}>
                 {isProactive ? (

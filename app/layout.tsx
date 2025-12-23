@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 const LIGHT_THEME_COLOR = "hsl(0 0% 100%)";
-const DARK_THEME_COLOR = "#020412"; // Deep space blue
+const DARK_THEME_COLOR = "#020817"; // Supermemory deep space blue
 const THEME_COLOR_SCRIPT = `\
 (function() {
   var html = document.documentElement;

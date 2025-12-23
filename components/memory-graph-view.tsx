@@ -3,10 +3,12 @@
 import { useState, useCallback, useEffect } from "react";
 import { MemoryGraph } from "@supermemory/memory-graph";
 import type { DocumentWithMemories } from "@/lib/types/supermemory";
-import { Brain, User, RefreshCw } from "lucide-react";
+import { Brain, User, RefreshCw, LogOut } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { signOut } from "@/app/(auth)/actions";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface MemoryGraphViewProps {
     isActive?: boolean;
@@ -202,42 +204,73 @@ export function MemoryGraphView({ isActive = true, isMobileView = false }: Memor
                 <ScrollArea className="flex-1 p-4">
                     {profileData ? (
                         <div className="space-y-6">
-                            <div className="space-y-2">
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 }}
+                                className="space-y-2"
+                            >
                                 <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Container Tag</h3>
-                                <div className="p-3 bg-muted rounded-md font-mono text-xs break-all">
+                                <div className="p-3 bg-muted rounded-md font-mono text-xs break-all border border-border/50">
                                     {profileData.userId}
                                 </div>
-                            </div>
+                            </motion.div>
 
-                            <div className="space-y-2">
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="space-y-2"
+                            >
                                 <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Static Facts</h3>
                                 {profileData.static && profileData.static.length > 0 ? (
                                     <ul className="space-y-2">
-                                        {profileData.static.map((item, i) => (
-                                            <li key={i} className="text-sm p-2 bg-muted/50 rounded border border-border/50">
-                                                {item}
-                                            </li>
-                                        ))}
+                                        <AnimatePresence>
+                                            {profileData.static.map((item, i) => (
+                                                <motion.li
+                                                    key={i}
+                                                    initial={{ opacity: 0, x: -5 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    transition={{ delay: 0.3 + i * 0.05 }}
+                                                    className="text-sm p-3 bg-card shadow-sm rounded-lg border border-border/50 hover:border-primary/30 transition-colors"
+                                                >
+                                                    {item}
+                                                </motion.li>
+                                            ))}
+                                        </AnimatePresence>
                                     </ul>
                                 ) : (
                                     <p className="text-sm text-muted-foreground italic">No static facts known yet.</p>
                                 )}
-                            </div>
+                            </motion.div>
 
-                            <div className="space-y-2">
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3 }}
+                                className="space-y-2"
+                            >
                                 <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Dynamic Facts</h3>
                                 {profileData.dynamic && profileData.dynamic.length > 0 ? (
                                     <ul className="space-y-2">
-                                        {profileData.dynamic.map((item, i) => (
-                                            <li key={i} className="text-sm p-2 bg-muted/50 rounded border border-border/50">
-                                                {item}
-                                            </li>
-                                        ))}
+                                        <AnimatePresence>
+                                            {profileData.dynamic.map((item, i) => (
+                                                <motion.li
+                                                    key={i}
+                                                    initial={{ opacity: 0, x: -5 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    transition={{ delay: 0.4 + i * 0.05 }}
+                                                    className="text-sm p-3 bg-card shadow-sm rounded-lg border border-border/50 hover:border-primary/30 transition-colors"
+                                                >
+                                                    {item}
+                                                </motion.li>
+                                            ))}
+                                        </AnimatePresence>
                                     </ul>
                                 ) : (
                                     <p className="text-sm text-muted-foreground italic">No dynamic facts known yet.</p>
                                 )}
-                            </div>
+                            </motion.div>
                         </div>
                     ) : (
                         <div className="flex items-center justify-center h-40 text-muted-foreground">
@@ -245,12 +278,25 @@ export function MemoryGraphView({ isActive = true, isMobileView = false }: Memor
                         </div>
                     )}
                 </ScrollArea>
+
+                <div className="p-4 border-t border-border mt-auto">
+                    <Button
+                        variant="ghost"
+                        className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={async () => {
+                            await signOut();
+                        }}
+                    >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                    </Button>
+                </div>
             </ResizablePanel>
 
             <ResizableHandle withHandle />
 
             {/* Graph Area Panel */}
-            <ResizablePanel defaultSize={70} className="relative bg-[#020410] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-950/20 to-[#020410]">
+            <ResizablePanel defaultSize={70} className="relative bg-background bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/10 to-background">
                 {hasInitialized && documents.length === 0 && !isLoading && (
                     <div className="absolute inset-0 flex items-center justify-center z-10">
                         <div className="text-center p-8">

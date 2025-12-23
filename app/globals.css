@@ -1,9 +1,12 @@
 @import "tailwindcss";
 @plugin "tailwindcss-animate";
 
+/* ================================
+   THEME VARIABLES
+================================ */
 :root {
-  /* Light Theme - Clean & Crisp */
-  --background: 210 40% 98%; /* Slightly cool white */
+  /* Light Theme */
+  --background: 210 40% 98%;
   --foreground: 222 47% 11%;
 
   --card: 0 0% 100%;
@@ -12,7 +15,7 @@
   --popover: 0 0% 100%;
   --popover-foreground: 222 47% 11%;
 
-  --primary: 250 100% 65%; /* Electric Purple/Blue */
+  --primary: 194 100% 50%;
   --primary-foreground: 210 40% 98%;
 
   --secondary: 210 40% 96.1%;
@@ -29,12 +32,12 @@
 
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
-  --ring: 250 100% 65%;
+  --ring: 194 100% 50%;
 
-  --radius: 1rem; /* More rounded premium feel */
+  --radius: 1rem;
 
-  /* Chart colors remain roughly same but vibrant */
-  --chart-1: 250 100% 65%;
+  /* Charts */
+  --chart-1: 194 100% 50%;
   --chart-2: 217 91% 60%;
   --chart-3: 190 100% 40%;
   --chart-4: 280 65% 60%;
@@ -42,42 +45,45 @@
 }
 
 .dark {
-  /* Deep Cosmos Theme */
-  --background: 240 25% 4%; /* #050511 - Deep distinct dark */
+  /* Dark Theme */
+  --background: 222 47% 5%;
   --foreground: 210 40% 98%;
 
-  --card: 240 20% 7%; /* Slightly lighter than bg */
+  --card: 222 40% 8%;
   --card-foreground: 210 40% 98%;
 
-  --popover: 240 20% 7%;
+  --popover: 222 40% 8%;
   --popover-foreground: 210 40% 98%;
 
-  --primary: 252 100% 68%; /* Vibrant Neon Purple/Blue */
-  --primary-foreground: 210 40% 98%;
+  --primary: 194 100% 50%;
+  --primary-foreground: 222 47% 5%;
 
-  --secondary: 240 15% 12%; /* Dark subtle secondary */
+  --secondary: 222 35% 12%;
   --secondary-foreground: 210 40% 98%;
 
-  --muted: 240 15% 12%;
-  --muted-foreground: 240 10% 65%;
+  --muted: 222 30% 12%;
+  --muted-foreground: 215 20% 65%;
 
-  --accent: 240 15% 15%; /* Highlight for glass */
+  --accent: 222 35% 15%;
   --accent-foreground: 210 40% 98%;
 
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 210 40% 98%;
 
-  --border: 240 15% 15%;
-  --input: 240 15% 15%;
-  --ring: 252 100% 68%;
+  --border: 222 30% 15%;
+  --input: 222 30% 15%;
+  --ring: 194 100% 50%;
 
-  --chart-1: 252 100% 68%;
+  --chart-1: 194 100% 50%;
   --chart-2: 190 100% 50%;
-  --chart-3: 310 90% 65%;
+  --chart-3: 217 91% 60%;
   --chart-4: 280 65% 60%;
   --chart-5: 340 75% 55%;
 }
 
+/* ================================
+   TAILWIND THEME BRIDGE
+================================ */
 @theme inline {
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
@@ -99,8 +105,8 @@
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
 
-  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, monospace;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -108,66 +114,93 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* ================================
+   BASE STYLES
+================================ */
 @layer base {
   * {
     @apply border-border;
   }
 
   body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/30 selection:text-white;
-    /* Premium atmospheric background */
+    @apply bg-background text-foreground antialiased selection:bg-primary/30 selection:text-primary-foreground;
+
     background-image:
-      radial-gradient(circle at 10% 0%, hsl(var(--primary) / 0.12) 0%, transparent 40%),
-      radial-gradient(circle at 90% 10%, hsl(310 90% 65% / 0.08) 0%, transparent 40%),
-      radial-gradient(circle at 50% 100%, hsl(var(--primary) / 0.05) 0%, transparent 60%);
+      radial-gradient(circle at 10% 0%, hsl(194 100% 50% / 0.15) 0%, transparent 40%),
+      radial-gradient(circle at 90% 10%, hsl(217 91% 60% / 0.1) 0%, transparent 40%),
+      radial-gradient(circle at 50% 100%, hsl(194 100% 50% / 0.08) 0%, transparent 60%);
     background-attachment: fixed;
   }
 }
 
+/* ================================
+   UTILITIES
+================================ */
 @layer utilities {
   .glass {
-    @apply bg-background/60 backdrop-blur-xl border border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)] supports-[backdrop-filter]:bg-background/40;
+    @apply bg-background/60 backdrop-blur-xl border border-primary/10 supports-[backdrop-filter]:bg-background/40;
+    box-shadow: 0 4px 30px rgba(0, 212, 255, 0.1);
   }
 
-  /* Deeper glass for improved readability on dark backgrounds */
   .glass-panel {
-    @apply bg-[#050511]/70 backdrop-blur-2xl border border-white/5 shadow-2xl;
+    @apply bg-card/80 backdrop-blur-2xl border border-primary/10;
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.15);
   }
-  
+
   .glass-card {
-    @apply bg-card/40 backdrop-blur-lg border border-white/5 shadow-lg transition-all duration-300 hover:bg-card/60 hover:border-white/10;
+    @apply bg-card/50 backdrop-blur-lg border border-primary/5 shadow-lg transition-all duration-300 hover:bg-card/70 hover:border-primary/20;
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.2);
   }
 
   .glow-text {
-    text-shadow: 0 0 15px hsl(var(--primary) / 0.6);
+    text-shadow:
+      0 0 20px hsl(194 100% 50% / 0.6),
+      0 0 40px hsl(194 100% 50% / 0.3);
   }
 
   .text-balance {
     text-wrap: balance;
   }
 
-  /* Smooth transitions */
   .transition-smooth {
     transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 }
 
-/* Animations using standard CSS for base stuff, specialized via famer-motion in components */
+/* ================================
+   ANIMATIONS
+================================ */
 @keyframes pulse-soft {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 0.8; }
+
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
 }
 
 .animate-float {
   animation: float 4s ease-in-out infinite;
 }
 
-/* Custom Scrollbar for cleaner look */
+/* ================================
+   SCROLLBAR
+================================ */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -178,9 +211,17 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-muted-foreground/20 rounded-full hover:bg-primary/50 transition-colors;
+  background-color: hsl(var(--muted-foreground) / 0.2);
+  border-radius: 9999px;
 }
 
+::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--primary) / 0.5);
+}
+
+/* ================================
+   CODEMIRROR
+================================ */
 .cm-editor,
 .cm-gutters {
   background-color: transparent !important;
