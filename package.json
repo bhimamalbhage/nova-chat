@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "cd packages/memory-graph && npm install --legacy-peer-deps && npm run build"
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.0",
@@ -67,5 +68,8 @@
     "eslint-config-next": "16.0.10",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "ai": "$ai"
   }
 }
