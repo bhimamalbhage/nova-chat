@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendMessage } from '@/lib/slack/client';
 import { generateSlackResponse } from '@/lib/slack/ai-handler';
+import { verifySlackRequest } from '@/lib/slack/verify';
 
 export async function POST(req: NextRequest) {
     try {
         const body = await req.text();
-        // Signature verification disabled for dev loop
+
+        // Verification logic
+        const secret = process.env.SLACK_SIGNING_SECRET;
+        if (secret && !verifySlackRequest(req, body, secret)) {
+            console.error('[Slack] Invalid signature');
+            return new NextResponse('Unauthorized', { status: 401 });
+        }
 
         const payload = JSON.parse(body);
 
