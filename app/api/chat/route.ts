@@ -18,7 +18,46 @@ import {
     saveMessages,
     createStreamId,
     updateChatTitle,
+    deleteChatById, // Added import
 } from '@/lib/db/queries';
+
+// ... (existing code)
+
+export async function DELETE(request: Request) {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+        return new Response('Missing id', { status: 400 });
+    }
+
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return new Response('Unauthorized', { status: 401 });
+    }
+
+    try {
+        const chat = await getChatById({ id });
+
+        if (!chat) {
+            return new Response('Chat not found', { status: 404 });
+        }
+
+        if (chat.userId !== user.id) {
+            return new Response('Forbidden', { status: 403 });
+        }
+
+        await deleteChatById({ id });
+
+        return new Response('Chat deleted', { status: 200 });
+    } catch (error) {
+        console.error('Delete Chat Error:', error);
+        return new Response('Internal Server Error', { status: 500 });
+    }
+}
+
 import { generateUUID } from '@/lib/utils';
 import { postRequestBodySchema } from './schema';
 import { systemPrompt } from '@/lib/ai/prompts';

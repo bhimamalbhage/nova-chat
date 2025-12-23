@@ -54,7 +54,22 @@ export default function App() {
     }, []);
 
     const handleDeleteConversation = async (id: string) => {
+        // Optimistic update
         mutateHistory(history?.filter(c => c.id !== id), false);
+
+        try {
+            const response = await fetch(`/api/chat?id=${id}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) {
+                console.error('Failed to delete chat');
+                mutateHistory(); // Re-fetch to restore in case of error
+            }
+        } catch (error) {
+            console.error('Error deleting chat:', error);
+            mutateHistory();
+        }
     };
 
     const handleNewChat = () => {

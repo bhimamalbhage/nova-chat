@@ -8,8 +8,14 @@ import {
     ContextMenuItem,
     ContextMenuTrigger,
 } from "./ui/context-menu";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import { Icons } from "./icons";
-import { Sparkles, Zap } from "lucide-react"; // Added imports
+import { Sparkles, Zap, MoreHorizontal, Trash2 } from "lucide-react"; // Added imports
 import { useTheme } from "next-themes";
 import { Logo } from "./logo";
 import { cn } from "@/lib/utils";
@@ -161,13 +167,19 @@ export function ConversationItem({
         onUpdateConversation(updatedConversations, 'mute');
     };
 
+    const handleDeleteClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onDeleteConversation(conversation.id);
+    };
+
     const ConversationContent = (
-        <button
+        <div
+            role="button"
+            tabIndex={0}
             onClick={handleSelect}
-            aria-label={`Conversation with ${displayName}`}
-            aria-current={isActive ? "true" : undefined}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelect(); }}
             className={cn(
-                "w-full py-3.5 px-4 text-left relative flex items-center gap-3 transition-all duration-500 rounded-xl group border",
+                "w-full py-3.5 px-4 text-left relative flex items-center gap-3 transition-all duration-500 rounded-xl group border cursor-pointer",
                 shouldAnimate && "scale-[1.02] shadow-xl shadow-violet-500/20 ring-1 ring-violet-500/50", // Pop effect
                 isActive
                     ? "bg-primary/10 text-primary-foreground shadow-lg shadow-primary/5 border-primary/20 backdrop-blur-md"
@@ -209,30 +221,41 @@ export function ConversationItem({
 
             <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
                 <div className="flex justify-between items-center w-full">
-                    <span className={cn("text-sm font-medium truncate pr-2 transition-colors duration-300", isActive || isProactive ? "text-foreground" : "text-foreground/90")}>
-                        {displayName}
-                    </span>
+                    <div className="flex items-center gap-2 min-w-0 overflow-hidden flex-1">
+                        <span className={cn("text-sm font-medium truncate transition-colors duration-300", isActive || isProactive ? "text-foreground" : "text-foreground/90")}>
+                            {displayName}
+                        </span>
+                        {conversation.pinned && (
+                            <Icons.pin className="w-3 h-3 text-muted-foreground rotate-45 flex-shrink-0 opacity-70" />
+                        )}
+                    </div>
                     {conversation.lastMessageTime && (
-                        <span className="text-[10px] text-muted-foreground flex-shrink-0 tabular-nums opacity-70">
+                        <span className="text-[10px] text-muted-foreground flex-shrink-0 tabular-nums opacity-70 group-hover:hidden pl-2">
                             {formatTime(conversation.lastMessageTime)}
                         </span>
                     )}
                 </div>
-
-                <div className="flex items-center justify-between w-full h-4">
-                    <div className="flex-1 truncate text-xs text-muted-foreground/80">
-                        {conversation.isTyping ? (
-                            <span className="text-primary italic text-[10px] animate-pulse">Typing...</span>
-                        ) : (
-                            conversation.messages.slice(-1)[0]?.content || "No messages yet"
-                        )}
-                    </div>
-                    {conversation.pinned && (
-                        <Icons.pin className="w-3 h-3 text-muted-foreground rotate-45 ml-1 opacity-70" />
-                    )}
-                </div>
             </div>
-        </button>
+
+            {/* Hover Menu */}
+            {!isMobileView && (
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <button className="p-1 hover:bg-black/20 dark:hover:bg-white/20 rounded-md transition-colors text-muted-foreground hover:text-foreground">
+                                <MoreHorizontal className="w-4 h-4" />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={handleDeleteClick} className="text-destructive focus:text-destructive gap-2">
+                                <Trash2 className="w-4 h-4" />
+                                Delete Chat
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            )}
+        </div>
     );
 
     if (isMobileView) {
