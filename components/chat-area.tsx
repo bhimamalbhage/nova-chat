@@ -164,37 +164,54 @@ export function ChatArea({ chatId, isMobileView, onBack, onNewMessage }: ChatAre
                                         )}
                                         style={{ animationDelay: `${index * 50}ms` }}
                                     >
-                                        <div className={cn("flex w-full items-end gap-2", m.role === 'user' ? "justify-end" : "justify-start")}>
-                                            <div
-                                                className={cn(
-                                                    "max-w-[85%] p-4 px-6 text-[15px] leading-relaxed break-words shadow-lg transition-all duration-300 hover:shadow-xl group",
-                                                    m.role === 'user'
-                                                        ? "bg-gradient-to-br from-primary to-blue-600 text-white rounded-[24px] rounded-br-sm border border-white/10"
-                                                        : "glass text-foreground rounded-[24px] rounded-bl-sm"
-                                                )}
-                                            >
-                                                {(m.parts || (m.content ? [{ type: 'text', text: m.content }] : [])).map((part: any, index: number) =>
-                                                    part.type === 'text' ? (
-                                                        <span key={index} className="whitespace-pre-wrap font-medium">{part.text}</span>
-                                                    ) : null
-                                                )}
+                                        {/* Calculate distinct message bubbles from splits */}
+                                        {(() => {
+                                            const parts = m.parts || (m.content ? [{ type: 'text', text: m.content }] : []);
+                                            const textContent = parts
+                                                .filter((p: any) => p.type === 'text')
+                                                .map((p: any) => p.text)
+                                                .join('');
 
-                                                {showTime && (
-                                                    <div className={cn(
-                                                        "text-[10px] mt-2 flex items-center gap-1 opacity-70",
-                                                        m.role === 'user' ? "text-white/80" : "text-muted-foreground"
-                                                    )}>
-                                                        {formatTimestamp(messageDate)}
-                                                        {messageStatus && m.role === 'user' && (
-                                                            <>
-                                                                <span>•</span>
-                                                                <CheckCheck className="w-3 h-3" />
-                                                            </>
+                                            // Split by delimiter if present
+                                            const splitContent = textContent.split('<SPLIT>');
+
+                                            return splitContent.map((contentChunk: string, chunkIndex: number) => (
+                                                <div
+                                                    key={`${m.id}-${chunkIndex}`}
+                                                    className={cn(
+                                                        "flex w-full items-end gap-2 mb-2 last:mb-0",
+                                                        m.role === 'user' ? "justify-end" : "justify-start"
+                                                    )}
+                                                >
+                                                    <div
+                                                        className={cn(
+                                                            "max-w-[85%] p-4 px-6 text-[15px] leading-relaxed break-words shadow-lg transition-all duration-300 hover:shadow-xl group",
+                                                            m.role === 'user'
+                                                                ? "bg-gradient-to-br from-primary to-blue-600 text-white rounded-[24px] rounded-br-sm border border-white/10"
+                                                                : "glass text-foreground rounded-[24px] rounded-bl-sm"
+                                                        )}
+                                                    >
+                                                        <span className="whitespace-pre-wrap font-medium">{contentChunk}</span>
+
+                                                        {/* Only show timestamp/status on the very last bubble of the split group */}
+                                                        {showTime && chunkIndex === splitContent.length - 1 && (
+                                                            <div className={cn(
+                                                                "text-[10px] mt-2 flex items-center gap-1 opacity-70",
+                                                                m.role === 'user' ? "text-white/80" : "text-muted-foreground"
+                                                            )}>
+                                                                {formatTimestamp(messageDate)}
+                                                                {messageStatus && m.role === 'user' && (
+                                                                    <>
+                                                                        <span>•</span>
+                                                                        <CheckCheck className="w-3 h-3" />
+                                                                    </>
+                                                                )}
+                                                            </div>
                                                         )}
                                                     </div>
-                                                )}
-                                            </div>
-                                        </div>
+                                                </div>
+                                            ));
+                                        })()}
 
                                         {(m.parts || []).some((p: any) => p.type?.startsWith('tool-')) && (
                                             <div className="mt-2 text-xs text-muted-foreground glass border border-white/5 p-2 px-3 rounded-lg max-w-[80%] ml-1 inline-flex items-center gap-2">
