@@ -38,8 +38,8 @@ export async function POST(req: NextRequest) {
 
                 console.log(`[Slack] Processing ${eventType} (${channelType}) from ${user} in ${channel}`);
 
-                // Async response
-                setImmediate(async () => {
+                // Define the background task
+                const handleAsync = async () => {
                     try {
                         // Resolve Token
                         const { getSlackAccessToken } = await import('@/lib/db/slack-installations');
@@ -50,29 +50,31 @@ export async function POST(req: NextRequest) {
                         const thinkingTs = await sendMessage(channel, "Let me think...", token || undefined);
 
                         if (!thinkingTs) {
-                            // Fallback if we couldn't send thinking message (rare)
                             const aiResponse = await generateSlackResponse(userMessage, user, channel);
                             await sendMessage(channel, aiResponse, token || undefined);
                             return;
                         }
 
                         try {
-                            // Pass User ID to handler
                             const aiResponse = await generateSlackResponse(userMessage, user, channel);
-
-                            // Update the "Thinking..." message with valid response
                             await updateMessage(channel, aiResponse, thinkingTs, token || undefined);
                         } catch (err: any) {
                             console.error('[Slack] Error generating response:', err);
-                            // Update thinking message with error
                             await updateMessage(channel, "I had a hiccup processing that request.", thinkingTs, token || undefined);
                         }
                     } catch (error) {
                         console.error('[Slack] Error in async handler:', error);
-                        // Make sure to send a fresh message if we couldn't update (or if outer catch caught something before thinkingTs)
                         await sendMessage(channel, "I had a hiccup processing that.");
                     }
-                });
+                };
+
+                // Use waitUntil if available (Vercel/Next.js requirement for background tasks)
+                if ((req as any).waitUntil) {
+                    (req as any).waitUntil(handleAsync());
+                } else {
+                    // Fallback for local dev
+                    handleAsync();
+                }
 
                 return new NextResponse('OK', { status: 200 });
             }
